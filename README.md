@@ -88,6 +88,41 @@ Cost gotcha: Exa bundles the first **10** results into the base request price;
 asking for 30 runs roughly 4x the headline rate. Prefer many varied queries at
 `--num-results 10` over one deep query. The adapter warns if you exceed it.
 
+## Stage 2 — preprocess
+
+```bash
+socr preprocess                          # inspect every stored PDF (cheap, do all of it)
+socr preprocess --render --max-pages-per-doc 2 --dpi 200
+socr preprocess --render-only --max-renders 5000
+```
+
+Inspection and rendering are separate passes on purpose: inspection is cheap and
+wanted on 100% of the corpus, rendering costs CPU and storage and is usually
+wanted on a *subset*. Inspect everything, decide from the signals, then pay to
+rasterise only what a later stage will actually look at.
+
+**What inspection harvests, for free, before any model runs:**
+
+| signal | what it settles |
+|---|---|
+| `n_widgets`, `has_acroform` | it is a form — *exactly*, not a classifier's guess |
+| `text_chars`, `has_text_layer` | born-digital vs scanned; whether a text layer can be trusted |
+| `rotation` (`/Rotate`) | declared page rotation, exact |
+| `text_angle` | content orientation from span direction vectors — free on born-digital pages, so the orientation CNN only ever runs on the scanned slice |
+| `n_drawings` | vector strokes: a proxy for ruled tables and charts |
+| `n_images`, `covered_by_one_image` | a single full-bleed image is the signature of a scan |
+
+Malformed files are normal at web scale, so a failed open is retried through
+pikepdf's repair path before the document is quarantined as `corrupt`.
+
+Renders are addressed by the hash of the *rendered bytes*, so an identical page
+produced by two documents (boilerplate covers, blank pages) stores once. The
+whole render tree is derived and evictable.
+
+`pypdfium2` renders and `pymupdf` inspects: rendering is the hot path over every
+page and pdfium is what production OCR stacks use, while PyMuPDF is far richer
+for structural signals.
+
 ## Design notes
 
 - **Postgres, not SQLite**: `claim_pending` uses `FOR UPDATE SKIP LOCKED`, so

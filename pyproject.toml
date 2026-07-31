@@ -3,7 +3,13 @@ name = "scriptocr"
 version = "0.1.0"
 description = "Document collection for OCR training corpora"
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.27", "psycopg[binary]>=3.2"]
+dependencies = [
+    "httpx>=0.27",
+    "psycopg[binary]>=3.2",
+    "pymupdf>=1.24",      # structural signals: spans, drawings, widgets
+    "pypdfium2>=4.30",    # rendering hot path (permissive licence)
+    "pikepdf>=9.0",       # repair pass for malformed files
+]
 
 [project.scripts]
 scriptocr = "scriptocr.__main__:main"

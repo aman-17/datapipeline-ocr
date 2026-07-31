@@ -28,10 +28,13 @@ from .adapters.source import SourceAdapter
 from .catalog import DEFAULT_DSN, Catalog
 from .collector import discover, fetch_pending, verify_store
 from .content_store import ContentStore
+from .preprocess.pipeline import inspect_documents, render_pages
+from .preprocess.store import PreprocessStore
 
 DATA_ROOT = Path(os.environ.get("SCRIPTOCR_DATA",
                                 Path.home() / "Desktop" / "scriptocr-data"))
 CAS_ROOT = DATA_ROOT / "cas"
+RENDER_ROOT = DATA_ROOT / "renders"
 STAGING_ROOT = DATA_ROOT / "staging"
 
 
@@ -122,6 +125,26 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_preprocess(args: argparse.Namespace) -> int:
+    """Stage 2: open every PDF, harvest free signals, optionally rasterise."""
+    store = PreprocessStore(args.dsn)
+    say = lambda m: print(f"  {m}", flush=True)  # noqa: E731
+    if not args.render_only:
+        result = inspect_documents(store, source=args.source, batch_size=args.batch,
+                                   max_documents=args.max, max_pages=args.max_pages,
+                                   on_progress=say)
+        print("inspect:", json.dumps(result.as_dict(), indent=1))
+    if args.render or args.render_only:
+        renders = ContentStore(args.renders, ext="jpg")
+        rr = render_pages(store, renders, source=args.source, dpi=args.dpi,
+                          max_pages_per_doc=args.max_pages_per_doc,
+                          max_renders=args.max_renders, on_progress=say)
+        print("render:", json.dumps(rr.as_dict(), indent=1))
+    print("\nstage 2 summary:", json.dumps(store.summary(), indent=1, default=str))
+    store.close()
+    return 0
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     catalog = Catalog(args.dsn)
     print("catalogue:", json.dumps(catalog.counts(), indent=1))
@@ -171,6 +194,22 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--batch", type=int, default=100)
     f.add_argument("--max", type=int, default=None, help="stop after N stored")
     f.set_defaults(handler=cmd_fetch)
+
+    p = sub.add_parser("preprocess", help="stage 2: inspect PDFs, extract signals, render")
+    p.add_argument("--source", default=None)
+    p.add_argument("--batch", type=int, default=50)
+    p.add_argument("--max", type=int, default=None, help="stop after N documents")
+    p.add_argument("--max-pages", type=int, default=None, dest="max_pages",
+                   help="inspect at most N pages per document")
+    p.add_argument("--render", action="store_true", help="also rasterise pages")
+    p.add_argument("--render-only", action="store_true", dest="render_only",
+                   help="skip inspection, only render already-inspected pages")
+    p.add_argument("--dpi", type=int, default=200)
+    p.add_argument("--max-pages-per-doc", type=int, default=None, dest="max_pages_per_doc",
+                   help="render only the first N pages of each document")
+    p.add_argument("--max-renders", type=int, default=None, dest="max_renders")
+    p.add_argument("--renders", default=str(RENDER_ROOT), help="render store root")
+    p.set_defaults(handler=cmd_preprocess)
 
     s = sub.add_parser("status", help="counts by source and store size")
     s.set_defaults(handler=cmd_status)
