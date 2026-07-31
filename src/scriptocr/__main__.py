@@ -19,13 +19,11 @@ import sys
 from pathlib import Path
 
 from .adapters.arxiv import ArXiv
-from .adapters.exa import Exa
-from .adapters.firecrawl import Firecrawl
 from .adapters.govdocs1 import GovDocs1
 from .adapters.internet_archive import InternetArchive
 from .adapters.pubmed_central import PubMedCentral
 from .adapters.safedocs import SafeDocs
-from .adapters.serpapi import SerpApi
+from .adapters.search import Exa, Firecrawl, SerpApi
 from .adapters.source import SourceAdapter
 from .catalog import DEFAULT_DSN, Catalog
 from .collector import discover, fetch_pending, verify_store

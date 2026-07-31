@@ -22,9 +22,9 @@ import os
 from typing import Any, Iterator
 from urllib.parse import urlparse
 
-from ..polite_client import PoliteClient, RateLimiter
-from ..provenance import DocumentRef
-from .source import PermanentFetchError, SourceAdapter
+from ...polite_client import PoliteClient, RateLimiter
+from ...provenance import DocumentRef
+from ..source import PermanentFetchError, SourceAdapter
 
 
 class MissingCredential(RuntimeError):

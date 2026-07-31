@@ -14,8 +14,8 @@ from typing import Any, Iterator
 
 import httpx
 
-from ..provenance import DocumentRef
-from .web_search import WebSearchAdapter, looks_like_pdf_url, require_key
+from ...provenance import DocumentRef
+from .adapter import WebSearchAdapter, looks_like_pdf_url, require_key
 
 ENDPOINT = "https://serpapi.com/search"
 PAGE = 10

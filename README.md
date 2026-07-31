@@ -117,8 +117,15 @@ src/scriptocr/
   __main__.py       thin CLI over collector  (python -m scriptocr ... / socr ...)
   adapters/
     source.py       SourceAdapter interface + fetch error taxonomy
-    govdocs1.py  internet_archive.py  safedocs.py  pmc_oa -> pubmed_central.py  arxiv.py
+    govdocs1.py  internet_archive.py  safedocs.py  pubmed_central.py  arxiv.py
+    search/       third-party paid APIs — keyed, billed per request
+      adapter.py    WebSearchAdapter: shared fetch + credential handling
+      exa.py  firecrawl.py  serpapi.py
 ```
+
+Open archives sit at the top level; anything under `search/` is a commercial
+vendor that needs a key and costs money per query. That split is the one worth
+seeing at a glance when deciding where to point a crawl.
 
 `collector.py` holds the stage logic and `__main__.py` only parses arguments —
 the fetch loop has to be callable from a Modal worker where there is no CLI.
