@@ -1,0 +1,20 @@
+[project]
+name = "scriptocr"
+version = "0.1.0"
+description = "Document collection for OCR training corpora"
+requires-python = ">=3.11"
+dependencies = ["httpx>=0.27", "psycopg[binary]>=3.2"]
+
+[project.scripts]
+scriptocr = "scriptocr.__main__:main"
+socr = "scriptocr.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scriptocr"]
+
+[tool.ruff]
+line-length = 100

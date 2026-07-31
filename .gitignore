@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Local tooling caches
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Corpus artefacts never belong in git. The content store and staged archives
+# live on disk under SCRIPTOCR_DATA and the catalogue lives in Postgres; both
+# are reproducible from `socr discover` + `socr fetch`.
+*-data/
+staging/
+cas/
+
+# Environment / credentials
+.env
