@@ -37,6 +37,9 @@ Config via env: `SCRIPTOCR_DSN` (default `postgresql:///scriptocr`), `SCRIPTOCR_
 | `safedocs_ccmain` | remote zip | ~8M real-world web PDFs, **untruncated** (unlike raw Common Crawl). |
 | `pmc_oa` | S3 bucket scan | Table-dense science; JATS XML alongside each PDF. |
 | `arxiv` | Atom API | Born-digital, math/table dense. Slow by design (see below). |
+| `exa` | search | Semantic. For types keywords can't express. `EXA_API_KEY` |
+| `firecrawl` | search | Native `categories:["pdf"]` filter. `FIRECRAWL_API_KEY` |
+| `serpapi` | search | Google + `filetype:pdf`. `SERPAPI_API_KEY` |
 
 ### Source-specific gotchas worth knowing
 
@@ -59,6 +62,31 @@ Config via env: `SCRIPTOCR_DSN` (default `postgresql:///scriptocr`), `SCRIPTOCR_
   pull from us-east-1 and egress is free). No AWS credentials here, so this
   adapter uses the public API at ~0.34 rps, which tops out around 1k docs/hour.
   Fine for thousands, wrong for millions — swap `discover`/`fetch` when scaling.
+
+### Search sources are discovery-only, on purpose
+
+Exa and Firecrawl will return extracted text or markdown for a page. For OCR
+training that is backwards: the **pixels** are the signal, and a vendor's text
+extraction is a mediocre weak label we would be paying for. So all three search
+adapters request URLs only — no `contents`, no `scrapeOptions` — and the PDF
+bytes are downloaded by our own client. One `fetch()` in `web_search.py` serves
+all of them.
+
+Aim search at *gaps*, not volume: it is the priciest discovery per document.
+Exa when you can only describe what you want ("scanned 1960s insurance claim
+form"); SerpAPI when you can name it (`form 1040 instructions filetype:pdf`).
+
+```bash
+export EXA_API_KEY=...   FIRECRAWL_API_KEY=...   SERPAPI_API_KEY=...
+socr discover exa --query "typewritten municipal budget tables 1970s" --num-results 10
+socr discover firecrawl --query "annual report scanned" --num-results 50
+socr discover serpapi --query "site:.gov inspection checklist" --num-results 40
+socr fetch --source exa
+```
+
+Cost gotcha: Exa bundles the first **10** results into the base request price;
+asking for 30 runs roughly 4x the headline rate. Prefer many varied queries at
+`--num-results 10` over one deep query. The adapter warns if you exceed it.
 
 ## Design notes
 

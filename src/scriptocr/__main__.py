@@ -19,10 +19,13 @@ import sys
 from pathlib import Path
 
 from .adapters.arxiv import ArXiv
+from .adapters.exa import Exa
+from .adapters.firecrawl import Firecrawl
 from .adapters.govdocs1 import GovDocs1
 from .adapters.internet_archive import InternetArchive
 from .adapters.pubmed_central import PubMedCentral
 from .adapters.safedocs import SafeDocs
+from .adapters.serpapi import SerpApi
 from .adapters.source import SourceAdapter
 from .catalog import DEFAULT_DSN, Catalog
 from .collector import discover, fetch_pending, verify_store
@@ -46,6 +49,12 @@ def build_adapter(name: str) -> SourceAdapter:
             return PubMedCentral()
         case "safedocs_ccmain":
             return SafeDocs()
+        case "exa":
+            return Exa()
+        case "firecrawl":
+            return Firecrawl()
+        case "serpapi":
+            return SerpApi()
         case _:
             raise SystemExit(f"unknown source: {name}")
 
@@ -81,6 +90,14 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
             kwargs["commercial_only"] = not args.include_noncommercial
             if args.start_after:
                 kwargs["start_after"] = args.start_after
+        case "exa" | "firecrawl" | "serpapi":
+            if not args.query:
+                raise SystemExit(f"{args.source} needs --query")
+            kwargs["query"] = args.query
+            kwargs["num_results"] = args.num_results
+            if args.domains:
+                kwargs["include_domains"] = [d.strip() for d in args.domains.split(",")]
+            kwargs["pdf_only"] = not args.any_content_type
     return kwargs
 
 
@@ -141,6 +158,12 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--zips", default="0", help="govdocs1 volumes, e.g. 0-4 or 0,3,7")
     d.add_argument("--max-per-item", type=int, default=1, dest="max_per_item")
     d.add_argument("--start-after", default=None, help="pmc_oa pagination anchor")
+    d.add_argument("--num-results", type=int, default=10, dest="num_results",
+                   help="results per search query (exa/firecrawl/serpapi)")
+    d.add_argument("--domains", default=None,
+                   help="comma-separated domain allow-list for search sources")
+    d.add_argument("--any-content-type", action="store_true", dest="any_content_type",
+                   help="keep non-.pdf URLs too (magic bytes still checked on fetch)")
     d.add_argument("--include-noncommercial", action="store_true",
                    help="pmc_oa: also accept licences that forbid commercial use")
     d.set_defaults(handler=cmd_discover)
