@@ -164,8 +164,3 @@ seeing at a glance when deciding where to point a crawl.
 
 `collector.py` holds the stage logic and `__main__.py` only parses arguments —
 the fetch loop has to be callable from a Modal worker where there is no CLI.
-
-## Next
-
-Not yet built: `--workers` parallel fetch, robots.txt handling for open-web
-sources, and the keyed sources (govinfo, CourtListener, Exa/SerpAPI/Firecrawl).
