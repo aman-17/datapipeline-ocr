@@ -40,6 +40,8 @@ Config via env: `SCRIPTOCR_DSN` (default `postgresql:///scriptocr`), `SCRIPTOCR_
 | `exa` | search | Semantic. For types keywords can't express. `EXA_API_KEY` |
 | `firecrawl` | search | Native `categories:["pdf"]` filter. `FIRECRAWL_API_KEY` |
 | `serpapi` | search | Google + `filetype:pdf`. `SERPAPI_API_KEY` |
+| `govinfo` | API enumeration | 3.38M US govt packages; USCOURTS is scanned/typewritten. `GOVINFO_API_KEY` (or `DEMO_KEY`) |
+| `courtlistener` | API enumeration | PACER filings via RECAP. Works unauthenticated; `COURTLISTENER_TOKEN` raises limits |
 
 ### Source-specific gotchas worth knowing
 
