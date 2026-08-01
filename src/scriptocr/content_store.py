@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import threading
 from pathlib import Path
 
 
@@ -38,7 +39,10 @@ class ContentStore:
         if dest.is_file():
             return sha, dest, False
         dest.parent.mkdir(parents=True, exist_ok=True)
-        tmp = dest.with_suffix(dest.suffix + f".tmp.{os.getpid()}")
+        # pid AND thread id: parallel fetch runs many threads in one process,
+        # and a shared temp name would let them clobber each other.
+        tmp = dest.with_suffix(
+            dest.suffix + f".tmp.{os.getpid()}.{threading.get_ident()}")
         tmp.write_bytes(data)
         os.replace(tmp, dest)          # atomic within a filesystem
         return sha, dest, True

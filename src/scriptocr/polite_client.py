@@ -9,6 +9,12 @@ Three things every source needs and everyone forgets:
     exact bug in llamacloud-bench's runner (no jitter, sleeps 2/4/8/16/32).
   * an identifying User-Agent — SEC will IP-ban for its absence, IA and others
     ask for it, and it is simple courtesy when crawling public archives.
+  * robots.txt — mandatory for search-sourced URLs, which are arbitrary web
+    hosts that never invited us. Fetched once per host and cached; a host that
+    serves no robots.txt is treated as allowing everything, which is the
+    convention. Documented bulk APIs (arXiv S3, IA download, PMC, digitalcorpora)
+    opt out explicitly: those endpoints are the sanctioned access path and a
+    site-wide crawler rule is not aimed at them.
 
 Also enforces a size cap and streams to avoid pulling a 2 GB file into memory
 because a URL lied about what it was.
@@ -19,7 +25,8 @@ import random
 import threading
 import time
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
+from urllib.robotparser import RobotFileParser
 
 import httpx
 
@@ -50,12 +57,55 @@ class RateLimiter:
             time.sleep(sleep_for)
 
 
+class RobotsCache:
+    """One robots.txt per host, fetched once, cached for the process lifetime."""
+
+    def __init__(self, user_agent: str = USER_AGENT, timeout: float = 20.0):
+        self.user_agent = user_agent
+        self.timeout = timeout
+        self._parsers: dict[str, RobotFileParser | None] = {}
+        self._lock = threading.Lock()
+
+    def allows(self, url: str) -> bool:
+        parts = urlparse(url)
+        host = f"{parts.scheme}://{parts.netloc}"
+        with self._lock:
+            known = host in self._parsers
+            parser = self._parsers.get(host)
+        if not known:
+            parser = self._load(host)
+            with self._lock:
+                self._parsers[host] = parser
+        # No robots.txt (or unreachable) means no restrictions, per convention.
+        return True if parser is None else parser.can_fetch(self.user_agent, url)
+
+    def _load(self, host: str) -> RobotFileParser | None:
+        try:
+            with httpx.Client(timeout=self.timeout, follow_redirects=True,
+                              headers={"User-Agent": self.user_agent}) as client:
+                r = client.get(urljoin(host, "/robots.txt"))
+            if r.status_code >= 400 or not r.text.strip():
+                return None
+            parser = RobotFileParser()
+            parser.parse(r.text.splitlines())
+            return parser
+        except Exception:  # noqa: BLE001 — unreachable robots.txt is not a denial
+            return None
+
+
+class RobotsDisallowed(PermanentFetchError):
+    """The host's robots.txt forbids this path for our User-Agent."""
+
+
 class PoliteClient:
     def __init__(self, *, rate: RateLimiter | None = None, timeout: float = 120.0,
-                 max_bytes: int = 128 * 1024 * 1024, max_retries: int = 4):
+                 max_bytes: int = 128 * 1024 * 1024, max_retries: int = 4,
+                 respect_robots: bool = False, robots: RobotsCache | None = None):
         self.rate = rate or RateLimiter()
         self.max_bytes = max_bytes
         self.max_retries = max_retries
+        self.respect_robots = respect_robots
+        self.robots = robots or (RobotsCache() if respect_robots else None)
         self.client = httpx.Client(
             timeout=timeout, follow_redirects=True,
             headers={"User-Agent": USER_AGENT, "Accept": "*/*"},
@@ -85,6 +135,8 @@ class PoliteClient:
 
     def get_bytes(self, url: str, *, expect_pdf: bool = True) -> bytes:
         """Stream a file with a hard size cap; verify it is really a PDF."""
+        if self.respect_robots and self.robots and not self.robots.allows(url):
+            raise RobotsDisallowed(f"robots.txt disallows {url}")
         host = urlparse(url).netloc
         last: Exception | None = None
         for attempt in range(self.max_retries):

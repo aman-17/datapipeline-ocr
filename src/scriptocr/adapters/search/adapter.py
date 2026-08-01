@@ -22,7 +22,7 @@ import os
 from typing import Any, Iterator
 from urllib.parse import urlparse
 
-from ...polite_client import PoliteClient, RateLimiter
+from ...polite_client import PoliteClient, RateLimiter, RobotsCache
 from ...provenance import DocumentRef
 from ..source import PermanentFetchError, SourceAdapter
 
@@ -54,10 +54,17 @@ class WebSearchAdapter(SourceAdapter):
     # their origin site does. Record, never assume reusable.
     license_default = "third-party-web-content"
 
-    def __init__(self, client: PoliteClient | None = None, *, default_rps: float = 2.0):
-        # Rate limiting here applies to the *document* hosts we download from,
-        # which are arbitrary web servers — hence conservative and per-host.
-        self.http = client or PoliteClient(rate=RateLimiter(default_rps=default_rps))
+    # One robots cache shared by every search adapter: the vendors surface the
+    # same hosts, and robots.txt should be fetched once per host, not per vendor.
+    _robots = RobotsCache()
+
+    def __init__(self, client: PoliteClient | None = None, *, default_rps: float = 2.0,
+                 respect_robots: bool = True):
+        # These URLs are arbitrary web servers that never invited us, so robots
+        # is honoured by default here — unlike the documented bulk APIs upstream.
+        self.http = client or PoliteClient(
+            rate=RateLimiter(default_rps=default_rps),
+            respect_robots=respect_robots, robots=self._robots)
 
     def fetch(self, ref_row: dict[str, Any]) -> bytes:
         url = ref_row.get("url")

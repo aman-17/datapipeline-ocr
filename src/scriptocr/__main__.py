@@ -19,7 +19,9 @@ import sys
 from pathlib import Path
 
 from .adapters.arxiv import ArXiv
+from .adapters.courtlistener import CourtListener
 from .adapters.govdocs1 import GovDocs1
+from .adapters.govinfo import GovInfo
 from .adapters.internet_archive import InternetArchive
 from .adapters.pubmed_central import PubMedCentral
 from .adapters.safedocs import SafeDocs
@@ -50,6 +52,10 @@ def build_adapter(name: str) -> SourceAdapter:
             return PubMedCentral()
         case "safedocs_ccmain":
             return SafeDocs()
+        case "govinfo":
+            return GovInfo()
+        case "courtlistener":
+            return CourtListener()
         case "exa":
             return Exa()
         case "firecrawl":
@@ -91,6 +97,15 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
             kwargs["commercial_only"] = not args.include_noncommercial
             if args.start_after:
                 kwargs["start_after"] = args.start_after
+        case "govinfo":
+            kwargs["collection"] = args.collection
+            kwargs["start_date"] = args.start_date
+            if args.end_date:
+                kwargs["end_date"] = args.end_date
+        case "courtlistener":
+            kwargs["query"] = args.query or ""
+            if args.court:
+                kwargs["court"] = args.court
         case "exa" | "firecrawl" | "serpapi":
             if not args.query:
                 raise SystemExit(f"{args.source} needs --query")
@@ -117,7 +132,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     catalog = Catalog(args.dsn)
     result = fetch_pending(catalog, ContentStore(args.cas), build_adapter,
                            source=args.source, batch_size=args.batch,
-                           max_documents=args.max,
+                           max_documents=args.max, workers=args.workers,
                            on_progress=lambda m: print(f"  {m}", flush=True))
     print("\n" + json.dumps(result.as_dict(), indent=1))
     print(json.dumps(catalog.counts(), indent=1))
@@ -179,6 +194,11 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--zips", default="0", help="govdocs1 volumes, e.g. 0-4 or 0,3,7")
     d.add_argument("--max-per-item", type=int, default=1, dest="max_per_item")
     d.add_argument("--start-after", default=None, help="pmc_oa pagination anchor")
+    d.add_argument("--collection", default="USCOURTS", help="govinfo collection code")
+    d.add_argument("--start-date", default="2023-01-01", dest="start_date",
+                   help="govinfo window start (YYYY-MM-DD)")
+    d.add_argument("--end-date", default=None, dest="end_date")
+    d.add_argument("--court", default=None, help="courtlistener court id filter")
     d.add_argument("--num-results", type=int, default=10, dest="num_results",
                    help="results per search query (exa/firecrawl/serpapi)")
     d.add_argument("--domains", default=None,
@@ -193,6 +213,8 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--source", default=None)
     f.add_argument("--batch", type=int, default=100)
     f.add_argument("--max", type=int, default=None, help="stop after N stored")
+    f.add_argument("--workers", type=int, default=1,
+                   help="parallel network fetches (catalogue writes stay serial)")
     f.set_defaults(handler=cmd_fetch)
 
     p = sub.add_parser("preprocess", help="stage 2: inspect PDFs, extract signals, render")
