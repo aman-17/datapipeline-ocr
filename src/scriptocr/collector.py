@@ -62,16 +62,24 @@ def discover(adapter: SourceAdapter, catalog: Catalog, *, on_progress: Progress 
             batch.clear()
             on_progress(f"discovered {total}")
 
-    for ref in adapter.discover(**kwargs):
-        # Carry the staged path into `extra` so a *different* process running the
-        # fetch pass can find bulk-archive bytes without re-deriving conventions.
-        if ref.local_path:
-            ref.extra["local_path"] = ref.local_path
-        batch.append(ref)
-        if len(batch) >= BATCH_UPSERT:
-            flush()
-    flush()
-    catalog.end_run(run_id, discovered=total)
+    # try/finally, because adapters now RAISE rather than return quietly when a
+    # source changes shape — that is the point of their fail-open guards. Without
+    # this, the guard firing threw away up to BATCH_UPSERT refs already enumerated
+    # and skipped end_run(), so the run row stayed open and the work was lost
+    # precisely when a source was misbehaving and the partial result mattered most.
+    try:
+        for ref in adapter.discover(**kwargs):
+            # Carry the staged path into `extra` so a *different* process running
+            # the fetch pass can find bulk-archive bytes without re-deriving
+            # conventions.
+            if ref.local_path:
+                ref.extra["local_path"] = ref.local_path
+            batch.append(ref)
+            if len(batch) >= BATCH_UPSERT:
+                flush()
+    finally:
+        flush()
+        catalog.end_run(run_id, discovered=total)
     return DiscoveryResult(discovered=total)
 
 

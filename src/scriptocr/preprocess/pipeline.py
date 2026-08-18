@@ -16,11 +16,16 @@ from pathlib import Path
 from typing import Callable
 
 from ..content_store import ContentStore, sha256_bytes
+from .density import document_score, measure_pdf, sample_pages
 from .inspector import inspect_pdf
 from .renderer import DEFAULT_DPI, render_page
 from .store import PreprocessStore
 
 Progress = Callable[[str], None]
+
+# Eight pages spread through a document is enough to rank it against another
+# document, and 12x cheaper than measuring a 100-page report end to end.
+DEFAULT_DENSITY_SAMPLE = 8
 
 
 def _noop(_: str) -> None:
@@ -51,6 +56,23 @@ class RenderResult:
         return {"rendered": self.rendered, "reused": self.reused, "failed": self.failed}
 
 
+@dataclass(slots=True)
+class DensityResult:
+    documents: int = 0
+    dense: int = 0
+    pages: int = 0
+    failed: int = 0
+
+    @property
+    def dense_frac(self) -> float:
+        return round(self.dense / self.documents, 3) if self.documents else 0.0
+
+    def as_dict(self) -> dict[str, float]:
+        return {"documents": self.documents, "dense_documents": self.dense,
+                "dense_frac": self.dense_frac, "pages_measured": self.pages,
+                "failed": self.failed}
+
+
 def inspect_documents(store: PreprocessStore, *, source: str | None = None,
                       batch_size: int = 50, max_documents: int | None = None,
                       max_pages: int | None = None,
@@ -74,6 +96,51 @@ def inspect_documents(store: PreprocessStore, *, source: str | None = None,
                 result.encrypted += 1
             if result.documents % 25 == 0:
                 on_progress(f"inspected {result.documents} docs / {result.pages} pages")
+        if max_documents and result.documents >= max_documents:
+            break
+    return result
+
+
+def measure_density(store: PreprocessStore, *, source: str | None = None,
+                    batch_size: int = 50, max_documents: int | None = None,
+                    sample: int = DEFAULT_DENSITY_SAMPLE,
+                    on_progress: Progress = _noop) -> DensityResult:
+    """Third stage-2 pass: how table- and chart-dense is each document?
+
+    Separate from `inspect_documents` because it is two orders of magnitude more
+    expensive — table finding runs at roughly 95 ms/page against inspection's
+    sub-millisecond signals — and because it is only worth paying for once a
+    document has survived inspection. Sampled, not exhaustive: the question is
+    "is this document worth its bytes", and eight pages answers it.
+    """
+    result = DensityResult()
+    while True:
+        claimed = store.claim_for_density(limit=batch_size, source=source)
+        if not claimed:
+            break
+        for row in claimed:
+            n_pages = row.get("n_pages") or 0
+            if n_pages <= 0:
+                store.record_density(row["id"], [], document_score([]))
+                result.failed += 1
+                continue
+            try:
+                densities = measure_pdf(row["stored_path"],
+                                        pages=sample_pages(n_pages, sample))
+            except Exception as exc:  # noqa: BLE001 — a broken file must not stop the pass
+                store.record_density(row["id"], [], document_score([]))
+                result.failed += 1
+                on_progress(f"density failed doc={row['id']}: {type(exc).__name__}: {exc}")
+                continue
+            score = document_score(densities)
+            store.record_density(row["id"], [d.as_row() for d in densities], score)
+            result.documents += 1
+            result.pages += score["pages_measured"]
+            if score["is_dense_doc"]:
+                result.dense += 1
+            if result.documents % 25 == 0:
+                on_progress(f"measured {result.documents} docs, "
+                            f"{result.dense} dense ({result.dense_frac:.0%})")
         if max_documents and result.documents >= max_documents:
             break
     return result

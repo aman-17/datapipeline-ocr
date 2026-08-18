@@ -28,6 +28,62 @@ uv run socr verify        # re-hash the store against the catalogue
 Config via env: `SCRIPTOCR_DSN` (default `postgresql:///scriptocr`), `SCRIPTOCR_DATA`
 (default `~/Desktop/scriptocr-data`).
 
+API keys live in a gitignored `.env`; load them before a run:
+
+```bash
+set -a; source .env; set +a
+```
+
+`GOVINFO_API_KEY` is the one that matters — it raises the limit from `DEMO_KEY`'s
+**10 requests per hour** to 36,000, and govinfo is the single largest allocation
+in the campaign at 3,000 documents.
+
+
+## Measuring table and chart density (stage 2.5)
+
+Collecting "60% complex tables and charts" is only meaningful if density is
+measured rather than assumed, so `preprocess/density.py` scores it from free
+signals and `socr density` reports yield per source.
+
+```bash
+uv run socr density              # measure, then print yield by source
+uv run socr campaign             # progress against the 10k / 60%-dense target
+uv run socr campaign --dry-run   # what a full run would discover
+uv run socr campaign --run       # execute the plan (multi-hour polite crawl, resumable)
+```
+
+Three things this module gets right that a naive version does not:
+
+- **`find_tables(strategy="text")` reports a table on almost every prose page.**
+  On a 119-page arXiv paper it claimed one on 12 of the first 12 pages. Every
+  text-strategy candidate has to survive a gate — three or more columns, short
+  cells, numbers in them — or prose is counted as tables and the 60% figure
+  becomes meaningless.
+- **A chart is a region, not a page property.** Vector primitives are clustered
+  spatially and each cluster judged on its own shape. Without this, a ruled
+  table's cell borders classify as bar charts: a 15-row insurance table did
+  exactly that until the grid test was added. Bars share a baseline; table cells
+  do not.
+- **Absence of evidence is tracked separately from evidence of absence.** An
+  un-OCR'd scan is opaque to every detector here, so `dense_frac` is computed
+  over pages that could be judged, and `pages_opaque` carries the rest. Roughly
+  a fifth of the campaign is deliberately image-only — FRASER, Internet Archive,
+  scanned audit reports — and scoring those as "not dense" would discard the
+  best scanned material in the corpus. `socr campaign` reports the dense
+  fraction as a **range** whose width is exactly that uncertainty.
+
+Charts on rasterised pages cannot be detected at all by any free signal, so
+`chart_pages` is a floor rather than a count wherever `chart_blind_pages > 0`.
+
+## Licence tiers
+
+Every adapter records a canonical licence string (`licensing.py`), and `tier()`
+buckets it into `commercial` / `restricted` / `unknown`. The best chart sources
+are the restricted ones — BIS and the Bank of England reserve copyright for
+non-commercial use — so they are collected and flagged rather than either
+silently included or lost. `socr campaign` prints the split. Anything
+unrecognised lands in `unknown`, never in `commercial`.
+
 ## Sources
 
 | source | shape | notes |
@@ -42,6 +98,11 @@ Config via env: `SCRIPTOCR_DSN` (default `postgresql:///scriptocr`), `SCRIPTOCR_
 | `serpapi` | search | Google + `filetype:pdf`. `SERPAPI_API_KEY` |
 | `govinfo` | API enumeration | 3.38M US govt packages; USCOURTS is scanned/typewritten. `GOVINFO_API_KEY` (or `DEMO_KEY`) |
 | `courtlistener` | API enumeration | PACER filings via RECAP. Works unauthenticated; `COURTLISTENER_TOKEN` raises limits |
+| `bis` | sitemap enumeration | BIS + BoE + BoJ. **The chart source**: measured 41 chart pages from 25 documents, more than every other source combined. Non-commercial licence. |
+| `worldbank` | API enumeration | 611k docs; `pdfurl` inline in the search JSON. Licence varies per tier — project docs forbid derivative works. |
+| `sec_edgar` | full-index enumeration | Public domain. Only X-17A-5 and ARS are actually PDF — N-CSR/ABS-EE/11-K measured 0%. |
+| `fraser` | sitemap + item page | St. Louis Fed historical archive. Scanned, typewritten, dense statistical tables; largest table measured anywhere (2,422 cells). |
+| `municipal_acfr` | ASP.NET form scrape | Ohio ACFRs. **Best density measured (80%)**, and every table found was borderless. |
 
 ### Source-specific gotchas worth knowing
 

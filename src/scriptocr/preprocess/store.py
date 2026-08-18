@@ -54,6 +54,49 @@ CREATE TABLE IF NOT EXISTS pages (
 CREATE INDEX IF NOT EXISTS ix_pages_doc ON pages (doc_id);
 CREATE INDEX IF NOT EXISTS ix_pages_textlayer ON pages (has_text_layer);
 CREATE INDEX IF NOT EXISTS ix_pages_unrendered ON pages (doc_id) WHERE render_sha256 IS NULL;
+
+-- Table/chart density, measured on a SAMPLE of pages rather than all of them:
+-- table finding costs ~95 ms/page, so a full sweep of a 10k-document corpus is
+-- days of CPU, while eight pages a document answers the only question
+-- acquisition asks — is this document dense enough to be worth its bytes.
+CREATE TABLE IF NOT EXISTS page_density (
+    doc_id                 BIGINT NOT NULL REFERENCES documents (id) ON DELETE CASCADE,
+    page_no                INTEGER NOT NULL,
+    n_tables               INTEGER,
+    n_complex_tables       INTEGER,
+    n_borderless_tables    INTEGER,   -- no ruling to key off: the hard slice
+    n_spanned_tables       INTEGER,   -- merged cells / straddling headers
+    max_table_cells        INTEGER,
+    n_charts               INTEGER,
+    chart_kinds            TEXT,      -- bar,line,pie,mixed
+    possible_raster_figure BOOLEAN,
+    chart_measurable       BOOLEAN,   -- FALSE on rasterised pages: charts are pixels
+    table_measurable       BOOLEAN,   -- FALSE with no text layer: an un-OCR'd scan
+    is_table_page          BOOLEAN,
+    is_chart_page          BOOLEAN,
+    error                  TEXT,
+    PRIMARY KEY (doc_id, page_no)
+);
+CREATE INDEX IF NOT EXISTS ix_density_table ON page_density (is_table_page);
+CREATE INDEX IF NOT EXISTS ix_density_chart ON page_density (is_chart_page);
+
+-- The document-level verdict the campaign actually spends its budget on.
+CREATE TABLE IF NOT EXISTS document_density (
+    doc_id              BIGINT PRIMARY KEY REFERENCES documents (id) ON DELETE CASCADE,
+    pages_measured      INTEGER,
+    pages_opaque        INTEGER,      -- sampled but un-judgeable (image-only)
+    table_pages         INTEGER,
+    chart_pages         INTEGER,
+    chart_blind_pages   INTEGER,      -- charts unmeasurable (rasterised)
+    dense_pages         INTEGER,
+    dense_frac          REAL,
+    borderless_pages    INTEGER,
+    raster_figure_pages INTEGER,
+    max_table_cells     INTEGER,
+    is_dense_doc        BOOLEAN,
+    measured_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_docdensity_dense ON document_density (is_dense_doc);
 """
 
 
@@ -131,6 +174,129 @@ class PreprocessStore:
         with self.conn.cursor() as cur:
             cur.execute("UPDATE pages SET render_sha256=%s, render_path=%s, render_dpi=%s"
                         " WHERE id=%s", (sha256, path, dpi, page_id))
+
+    # ---- density ---------------------------------------------------------
+    def claim_for_density(self, limit: int = 50, *, source: str | None = None
+                          ) -> list[dict[str, Any]]:
+        """Claim inspected documents that have not been density-measured.
+
+        The claim is the INSERT itself, exactly as in `claim`: two workers racing
+        the same document produce one winner and no duplicated CPU.
+        """
+        q = """
+        WITH candidate AS (
+            SELECT d.id, d.source, d.stored_path, p.n_pages
+            FROM documents d
+            JOIN pdf_documents p ON p.doc_id = d.id
+            LEFT JOIN document_density dd ON dd.doc_id = d.id
+            WHERE d.status = 'stored'
+              AND p.status IN ('ok', 'repaired')
+              AND dd.doc_id IS NULL
+              {src}
+            ORDER BY d.id
+            LIMIT %(limit)s
+        ), claimed AS (
+            INSERT INTO document_density (doc_id, pages_measured)
+            SELECT id, -1 FROM candidate
+            ON CONFLICT (doc_id) DO NOTHING
+            RETURNING doc_id
+        )
+        SELECT c.id, c.source, c.stored_path, c.n_pages
+        FROM candidate c JOIN claimed k ON k.doc_id = c.id
+        """.format(src="AND d.source = %(source)s" if source else "")
+        with self.conn.cursor() as cur:
+            cur.execute(q, {"limit": limit, "source": source})
+            return cur.fetchall()
+
+    def record_density(self, doc_id: int, rows: Iterable[dict[str, Any]],
+                       score: dict[str, Any]) -> None:
+        rows = list(rows)
+        with self.conn.cursor() as cur:
+            if rows:
+                cur.executemany(
+                    "INSERT INTO page_density (doc_id, page_no, n_tables,"
+                    " n_complex_tables, n_borderless_tables, n_spanned_tables,"
+                    " max_table_cells, n_charts, chart_kinds, possible_raster_figure,"
+                    " chart_measurable, table_measurable, is_table_page, is_chart_page, error)"
+                    " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                    " ON CONFLICT (doc_id, page_no) DO NOTHING",
+                    [(doc_id, r["page_no"], r["n_tables"], r["n_complex_tables"],
+                      r["n_borderless_tables"], r["n_spanned_tables"],
+                      r["max_table_cells"], r["n_charts"], r["chart_kinds"],
+                      r["possible_raster_figure"], r["chart_measurable"],
+                      r["table_measurable"], r["is_table_page"], r["is_chart_page"],
+                      r["error"])
+                     for r in rows])
+            cur.execute(
+                "UPDATE document_density SET pages_measured=%s, pages_opaque=%s, table_pages=%s,"
+                " chart_pages=%s, chart_blind_pages=%s, dense_pages=%s, dense_frac=%s,"
+                " borderless_pages=%s, raster_figure_pages=%s, max_table_cells=%s,"
+                " is_dense_doc=%s, measured_at=now() WHERE doc_id=%s",
+                (score["pages_measured"], score["pages_opaque"], score["table_pages"],
+                 score["chart_pages"],
+                 score["chart_blind_pages"], score["dense_pages"], score["dense_frac"],
+                 score["borderless_pages"], score["raster_figure_pages"],
+                 score["max_table_cells"], score["is_dense_doc"], doc_id))
+
+    def density_by_source(self) -> list[dict[str, Any]]:
+        """Yield per source — the number that decides where the next budget goes."""
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT d.source,
+                       COUNT(*)                                    AS docs,
+                       COUNT(*) FILTER (WHERE dd.is_dense_doc)     AS dense_docs,
+                       ROUND(AVG(dd.dense_frac)::numeric, 3)       AS mean_dense_frac,
+                       SUM(dd.table_pages)                         AS table_pages,
+                       SUM(dd.chart_pages)                         AS chart_pages,
+                       SUM(dd.chart_blind_pages)                   AS chart_blind_pages,
+                       SUM(dd.pages_opaque)                        AS opaque_pages,
+                       SUM(dd.borderless_pages)                    AS borderless_pages
+                FROM document_density dd
+                JOIN documents d ON d.id = dd.doc_id
+                WHERE dd.pages_measured > 0
+                GROUP BY d.source
+                ORDER BY dense_docs DESC""")
+            return cur.fetchall()
+
+    def campaign_progress(self) -> list[dict[str, Any]]:
+        """Per-source counts the campaign controller reasons about.
+
+        A document counts as opaque when every page sampled from it was
+        image-only. That is the honest bucket for a scanned corpus: it is not
+        evidence of low density, it is absence of evidence.
+        """
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT d.source,
+                       COUNT(*) FILTER (WHERE d.status = 'stored')          AS stored,
+                       COUNT(dd.doc_id) FILTER (WHERE dd.pages_measured > 0) AS measured,
+                       COUNT(*) FILTER (WHERE dd.is_dense_doc)               AS dense,
+                       COUNT(*) FILTER (WHERE dd.pages_measured > 0
+                                          AND dd.pages_opaque >= dd.pages_measured)
+                                                                            AS opaque_docs
+                FROM documents d
+                LEFT JOIN document_density dd ON dd.doc_id = d.id
+                GROUP BY d.source
+                ORDER BY stored DESC""")
+            return cur.fetchall()
+
+    def licence_counts(self) -> list[dict[str, Any]]:
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT license, COUNT(*) AS n FROM documents"
+                        " WHERE status='stored' GROUP BY license")
+            return cur.fetchall()
+
+    def density_totals(self) -> dict[str, Any]:
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT COUNT(*)                                AS measured_docs,
+                       COUNT(*) FILTER (WHERE is_dense_doc)    AS dense_docs,
+                       SUM(chart_pages)                        AS chart_pages,
+                       SUM(chart_blind_pages)                  AS chart_blind_pages,
+                       SUM(pages_opaque)                       AS opaque_pages,
+                       SUM(borderless_pages)                   AS borderless_pages
+                FROM document_density WHERE pages_measured > 0""")
+            return cur.fetchone()
 
     # ---- reporting -------------------------------------------------------
     def summary(self) -> dict[str, Any]:

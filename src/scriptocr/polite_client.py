@@ -21,6 +21,7 @@ because a URL lied about what it was.
 """
 from __future__ import annotations
 
+import os
 import random
 import threading
 import time
@@ -32,9 +33,32 @@ import httpx
 
 from .adapters.source import PermanentFetchError, TransientFetchError
 
-USER_AGENT = ("llamaindex-ocr-research/0.1 (document collection for OCR model training; "
-              "contact: amanrangapur@gmail.com)")
+CONTACT = "amanrangapur@gmail.com"
+# The agent doing the collecting, named. The Internet Archive's own guidance is
+# explicit that AI/LLM agents must identify the tool and the model in addition
+# to the operator — "critical for AI agents, bots, and automated tools" — and it
+# is the courteous default everywhere else too: an archive that can see what is
+# crawling it can throttle rather than ban. Overridable via SCRIPTOCR_AGENT for
+# anyone running this pipeline under a different harness.
+AGENT = os.environ.get("SCRIPTOCR_AGENT", "Claude Code/1.0 (claude-opus-5)")
+USER_AGENT = (f"llamaindex-ocr-research/0.1 (document collection for OCR model "
+              f"training; contact: {CONTACT}) {AGENT}")
 RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
+
+
+# The last-request clock is GLOBAL PER HOST, and that is the whole point.
+#
+# The fetch pass builds one adapter per worker thread, because adapters are not
+# thread-safe (SafeDocs caches open ZipFile handles). Each of those adapters used
+# to construct its own RateLimiter, so the *clock* was per-thread as well as the
+# adapter — and `--workers 6` therefore issued six times the rate every adapter
+# carefully documents. Measured consequence: ~12.4 req/s against the 10 req/s
+# ceiling sec.gov publishes and this codebase cites.
+#
+# The RATE stays per adapter (each knows its own host's limit); only the clock is
+# shared, so N threads hitting one host serialise against one another.
+_SHARED_LAST: dict[str, float] = {}
+_SHARED_LOCK = threading.Lock()
 
 
 @dataclass
@@ -42,8 +66,16 @@ class RateLimiter:
     """Token-bucket-ish minimum interval between requests, per host."""
     default_rps: float = 2.0
     per_host_rps: dict[str, float] = field(default_factory=dict)
+    # Tests that need an instance not to see other instances' history pass
+    # isolated=True; production never should.
+    isolated: bool = False
     _last: dict[str, float] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def __post_init__(self) -> None:
+        if not self.isolated:
+            self._last = _SHARED_LAST
+            self._lock = _SHARED_LOCK
 
     def wait(self, host: str) -> None:
         rps = self.per_host_rps.get(host, self.default_rps)
