@@ -1,6 +1,6 @@
 #!/bin/bash
 # outage-tolerant: passes only touch pages without raw/<stem>.items.json; persisted job ids re-poll, never re-bill
-export LLAMA_CLOUD_API_KEY=***REMOVED***
+: "${LLAMA_CLOUD_API_KEY:?set LLAMA_CLOUD_API_KEY in the environment before running}"
 cd /Users/aman/programs/experimental/ocr_postraining/data-preparation-phase-1
 OUT=/Users/aman/Desktop/real-tables-v2-gt
 n() { ls $OUT/raw/*.items.json 2>/dev/null | wc -l | tr -d ' '; }

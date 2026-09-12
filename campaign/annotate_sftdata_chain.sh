@@ -1,7 +1,7 @@
 #!/bin/bash
 # Agentic+ (sebas-max) annotation of ~/Desktop/SFT-data/{magazines-10k-pages,sota-v1-sample}
 # -> ~/Desktop/SFT-data-with-annotations/<same name>. Outage-tolerant, resumable, never re-bills.
-export LLAMA_CLOUD_API_KEY=***REMOVED***
+: "${LLAMA_CLOUD_API_KEY:?set LLAMA_CLOUD_API_KEY in the environment before running}"
 cd /Users/aman/programs/experimental/ocr_postraining/data-preparation-phase-1
 PY=/Users/aman/programs/experimental/ocr_postraining/data-preparation-phase-1/.venv/bin/python
 T=/Users/aman/programs/experimental/ocr_postraining/data-preparation-phase-1/collect_phase2/tools
