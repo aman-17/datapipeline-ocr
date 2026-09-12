@@ -1,0 +1,82 @@
+=== preprocess magazine_archives 09:46
+    raise ex.with_traceback(None)
+psycopg.DataError: PostgreSQL text fields cannot contain NUL (0x00) bytes
+=== density magazine_archives 10:43
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15495,
+ "dense_docs": 7874,
+ "chart_pages": 6117,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== preprocess govinfo 12:42
+ }
+}
+=== density govinfo 12:42
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15495,
+ "dense_docs": 7874,
+ "chart_pages": 6117,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== fetch openalex remainder 12:42
+ "stored": 41185
+}
+=== preprocess openalex 12:42
+ }
+}
+=== density openalex 12:42
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15495,
+ "dense_docs": 7874,
+ "chart_pages": 6117,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== INSTITUTIONAL SCORED 12:42

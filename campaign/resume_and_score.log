@@ -1,0 +1,338 @@
+=== fetch openalex 21:22
+ "skipped": 1980,
+ "stored": 41185
+}
+=== fetch magazine_archives 02:13
+ "skipped": 1980,
+ "stored": 41185
+}
+=== preprocess dailymed 02:13
+ }
+}
+=== density dailymed 02:16
+  dailymed                600    239   40%    1834      95       8     267
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  fraser                   15      6   40%       6       0       0       6
+  govdocs1                 30      6   20%      25       7       1       8
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  pmc_oa                    8      1   12%       4       0       0       4
+  arxiv                     8      1   12%       9       4       0       8
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 6011,
+ "dense_docs": 4232,
+ "chart_pages": 1107,
+ "chart_blind_pages": 1924,
+ "opaque_pages": 130,
+ "borderless_pages": 9242
+}
+=== preprocess ntrs 02:26
+ }
+}
+=== density ntrs 02:58
+  ntrs                    792    181   23%    1402     285     380     842
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  fraser                   15      6   40%       6       0       0       6
+  govdocs1                 30      6   20%      25       7       1       8
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  worldbank                24      2    8%      17       8       4      11
+  courtlistener            12      2   17%       5       1       0       5
+  arxiv                     8      1   12%       9       4       0       8
+  pmc_oa                    8      1   12%       4       0       0       4
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 6803,
+ "dense_docs": 4413,
+ "chart_pages": 1392,
+ "chart_blind_pages": 5554,
+ "opaque_pages": 510,
+ "borderless_pages": 10084
+}
+=== preprocess eric 03:35
+ }
+}
+=== density eric 03:46
+  ntrs                    792    181   23%    1402     285     380     842
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  fraser                   15      6   40%       6       0       0       6
+  govdocs1                 30      6   20%      25       7       1       8
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  worldbank                24      2    8%      17       8       4      11
+  courtlistener            12      2   17%       5       1       0       5
+  arxiv                     8      1   12%       9       4       0       8
+  pmc_oa                    8      1   12%       4       0       0       4
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 7601,
+ "dense_docs": 5007,
+ "chart_pages": 2159,
+ "chart_blind_pages": 5948,
+ "opaque_pages": 563,
+ "borderless_pages": 12688
+}
+=== preprocess eurlex 04:05
+ }
+}
+=== density eurlex 04:08
+  ntrs                    792    181   23%    1402     285     380     842
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  fraser                   15      6   40%       6       0       0       6
+  govdocs1                 30      6   20%      25       7       1       8
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  worldbank                24      2    8%      17       8       4      11
+  pmc_oa                    8      1   12%       4       0       0       4
+  arxiv                     8      1   12%       9       4       0       8
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 8601,
+ "dense_docs": 5372,
+ "chart_pages": 2159,
+ "chart_blind_pages": 5948,
+ "opaque_pages": 563,
+ "borderless_pages": 13197
+}
+=== preprocess openalex 04:22
+    raise ex.with_traceback(None)
+psycopg.DataError: PostgreSQL text fields cannot contain NUL (0x00) bytes
+=== density openalex 04:23
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  arxiv                     8      1   12%       9       4       0       8
+  pmc_oa                    8      1   12%       4       0       0       4
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 8850,
+ "dense_docs": 5397,
+ "chart_pages": 2223,
+ "chart_blind_pages": 6128,
+ "opaque_pages": 564,
+ "borderless_pages": 13315
+}
+=== preprocess pmc_oa 04:29
+ }
+}
+=== density pmc_oa 04:38
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  fraser                   15      6   40%       6       0       0       6
+  govdocs1                 30      6   20%      25       7       1       8
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  arxiv                     8      1   12%       9       4       0       8
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 10341,
+ "dense_docs": 5505,
+ "chart_pages": 2556,
+ "chart_blind_pages": 6187,
+ "opaque_pages": 564,
+ "borderless_pages": 14550
+}
+=== preprocess arxiv 05:29
+ }
+}
+=== density arxiv 06:01
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15496,
+ "dense_docs": 7874,
+ "chart_pages": 6118,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== preprocess govinfo 13:33
+ }
+}
+=== density govinfo 13:33
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15496,
+ "dense_docs": 7874,
+ "chart_pages": 6118,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== preprocess magazine_archives 13:33
+ }
+}
+=== density magazine_archives 13:33
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15496,
+ "dense_docs": 7874,
+ "chart_pages": 6118,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== preprocess internet_archive 13:33
+ }
+}
+=== density bis 13:33
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15496,
+ "dense_docs": 7874,
+ "chart_pages": 6118,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== density worldbank 13:33
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15496,
+ "dense_docs": 7874,
+ "chart_pages": 6118,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== density sec_edgar 13:33
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15496,
+ "dense_docs": 7874,
+ "chart_pages": 6118,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== density internet_archive 13:33
+  ntrs                    792    181   23%    1402     285     380     842
+  pmc_oa                 1499    109    7%    1325     333       0    1239
+  openalex                249     25   10%     201      64       1     118
+  exa                      19      8   42%      43       0       5      26
+  bis                      25      7   28%      15      32       0       9
+  govdocs1                 30      6   20%      25       7       1       8
+  fraser                   15      6   40%       6       0       0       6
+  internet_archive         15      4   27%      15       1       1       5
+  firecrawl                 7      3   43%      12       4       1      10
+  courtlistener            12      2   17%       5       1       0       5
+  worldbank                24      2    8%      17       8       4      11
+  safedocs_ccmain           8      2   25%       3       1       8       0
+  (opaque = image-only pages no free signal can judge; they are not counted against a source's rate)
+
+corpus: {
+ "measured_docs": 15496,
+ "dense_docs": 7874,
+ "chart_pages": 6118,
+ "chart_blind_pages": 7983,
+ "opaque_pages": 654,
+ "borderless_pages": 26387
+}
+=== ALL SCORED 13:33

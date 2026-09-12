@@ -1,0 +1,26 @@
+# magazine_archives seeds — group "stats-offices" (national statistical offices, born-digital table PDFs)
+# format: <index-page-url> | <licence> | <label> | follow=<regex>
+# Every line below was validated on 2026-09-10: robots.txt checked, index fetched, >=1 PDF fetched
+# (HTTP 200, %PDF- magic), pymupdf text layer >= 30 words on a table page, tables visible.
+
+# --- Japan, Statistics Bureau (ja). Terms of use = Public Data Licence 1.0, declared CC BY 4.0 compatible (stat.go.jp/info/riyou.html)
+https://www.stat.go.jp/data/nihon/index2.html | cc-by-4.0 | stat.go.jp Nihon no Tokei (Statistics of Japan) annual, 2016-2026 editions
+https://www.stat.go.jp/data/sekai/index.html | cc-by-4.0 | stat.go.jp Sekai no Tokei (World Statistics) annual
+
+# --- Poland, GUS (pl). stat.gov.pl/copyright: copying files permitted with source cited (attribution, no formal CC)
+https://stat.gov.pl/obszary-tematyczne/roczniki-statystyczne/roczniki-statystyczne/ | attribution-required (stat.gov.pl/copyright) | GUS statistical yearbooks (Rocznik Statystyczny, Maly Rocznik, sectoral yearbooks) | follow=/roczniki-statystyczne/roczniki-statystyczne/[^/?]+,\d+,\d+\.html$
+https://stat.gov.pl/obszary-tematyczne/inne-opracowania/informacje-o-sytuacji-spoleczno-gospodarczej/ | attribution-required (stat.gov.pl/copyright) | GUS Biuletyn Statystyczny monthly bulletin | follow=biuletyn-statystyczny[^/]*,\d+,\d+\.html$
+
+# --- Brazil, IBGE (pt). Apache directory listings on ftp.ibge.gov.br (no robots.txt); licence not stated on the FTP host, www.ibge.gov.br terms page 403s for our UA
+https://ftp.ibge.gov.br/Precos_Indices_de_Precos_ao_Consumidor/IPCA/Fasciculo_Indicadores_IBGE/ | | IBGE Indicadores IBGE: IPCA/INPC monthly fascicles (current year at top level, older years in YYYY/ subdirs) | follow=/Fasciculo_Indicadores_IBGE/\d{4}/$
+https://ftp.ibge.gov.br/Comercio_e_Servicos/Pesquisa_Mensal_de_Comercio/Fasciculo_Indicadores_IBGE/ | | IBGE Indicadores IBGE: Pesquisa Mensal de Comercio monthly fascicles | follow=/Fasciculo_Indicadores_IBGE/\d{4}/$
+
+# --- Italy, ISTAT (it). Footer links creativecommons.org/licenses/by/4.0. The /comunicati-stampa/ listing is JS-loaded; WordPress tag archives are server-rendered
+https://www.istat.it/tag/prezzi-al-consumo/ | cc-by-4.0 | ISTAT press releases: consumer prices (tag archive -> comunicato-stampa page -> PDF) | follow=/comunicato-stampa/[^/]+/$
+https://www.istat.it/tag/occupati-e-disoccupati/ | cc-by-4.0 | ISTAT press releases: employment and unemployment | follow=/comunicato-stampa/[^/]+/$
+
+# --- Spain, INE (es). Site footer declares CC BY 4.0; aviso legal permits reuse with attribution
+https://www.ine.es/dyngs/Prensa/notasPrensa.htm | cc-by-4.0 | INE notas de prensa (223 release pages, each with its PDF) | follow=/dyngs/Prensa/[A-Za-z0-9_]+\.htm$
+
+# --- Austria, Statistik Austria (de). Impressum: reproduce/distribute/adapt permitted with source "STATISTIK AUSTRIA" (attribution, no formal CC)
+https://www.statistik.at/medien/pressemitteilungen | attribution-required (statistik.at impressum) | Statistik Austria Pressemitteilungen, 811 PDFs linked directly (2023-)

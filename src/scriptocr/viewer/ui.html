@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>scriptocr viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #14161a; --panel: #1c1f25; --panel2: #23272f; --line: #2e333c;
+    --fg: #e6e8ec; --muted: #8b93a1; --accent: #4f8cff; --sel: #35c46a; --warn: #f0a640;
+    --card: #1a1d22;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg);
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  a { color: var(--accent); text-decoration: none; }
+  button { font: inherit; color: var(--fg); background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.danger:hover { border-color: #e5533d; color: #ffb4a8; }
+  input, select { font: inherit; color: var(--fg); background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 8px; }
+  input[type=number] { width: 70px; }
+  kbd { font: 11px ui-monospace, Menlo, monospace; background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 4px; padding: 1px 5px; color: var(--muted); }
+
+  #top { display: flex; align-items: center; gap: 14px; padding: 8px 14px; background: var(--panel);
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  #top h1 { font-size: 14px; margin: 0 8px 0 0; font-weight: 600; }
+  #tabs button { border-radius: 999px; }
+  #tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #selcount { margin-left: auto; color: var(--sel); font-weight: 600; }
+  #outdir { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  #status { color: var(--muted); font-size: 12px; }
+
+  #layout { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 42px); }
+  #side { background: var(--panel); border-right: 1px solid var(--line); padding: 12px; overflow: auto; }
+  #side h3 { margin: 12px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  #side label { display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; }
+  .src { display: flex; justify-content: space-between; padding: 3px 6px; border-radius: 5px; cursor: pointer; }
+  .src:hover { background: var(--panel2); }
+  .src.on { background: var(--accent); color: #fff; }
+  .src .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .src.on .n { color: #dfe9ff; }
+  #main { overflow: auto; padding: 12px 16px; }
+
+  table.docs { width: 100%; border-collapse: collapse; }
+  table.docs th { text-align: left; color: var(--muted); font-weight: 500; font-size: 11px; padding: 4px 8px;
+    border-bottom: 1px solid var(--line); position: sticky; top: -12px; background: var(--bg); }
+  table.docs td { padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.docs td.t { white-space: normal; max-width: 60vw; }
+  table.docs tr { cursor: pointer; }
+  table.docs tr:hover td { background: var(--panel); }
+  table.docs tr.cur td { background: var(--panel2); }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 999px; background: var(--panel2);
+    color: var(--muted); font-size: 11px; margin-right: 4px; }
+  .pill.sel { background: #1f3a2a; color: var(--sel); }
+  .num { font-variant-numeric: tabular-nums; text-align: right; }
+
+  .dochead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .dochead .title { font-size: 15px; font-weight: 600; }
+  .dochead .meta { color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 8px; overflow: hidden;
+    cursor: pointer; position: relative; outline: none; }
+  .card:focus, .card.focus { border-color: var(--accent); }
+  .card.sel { border-color: var(--sel); box-shadow: 0 0 0 1px var(--sel) inset; }
+  .card img { display: block; width: 100%; min-height: 200px; background: #0f1113; object-fit: contain; }
+  .card .cap { display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    padding: 4px 7px; font-size: 11px; color: var(--muted); }
+  .card .cap .p { color: var(--fg); font-weight: 600; }
+  .card .sub { padding: 0 7px 5px; font-size: 11px; color: var(--muted); overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .card .tick { position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--sel); color: #fff; display: none; align-items: center; justify-content: center; font-weight: 700; }
+  .card.sel .tick { display: flex; }
+  .badges span { display: inline-block; margin-left: 3px; padding: 0 5px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; background: var(--panel2); color: var(--muted); }
+  .badges .T { color: #7dc7ff; } .badges .C { color: #ffb86b; } .badges .S { color: #d9a3ff; }
+  .badges .F { color: #8fe3a8; } .badges .R { color: #ff8d8d; } .badges .B { color: #7dc7ff; }
+  .pager { display: flex; align-items: center; gap: 10px; margin: 10px 0; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); cursor: pointer; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .empty { color: var(--muted); padding: 40px; text-align: center; }
+  .help { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.8; }
+
+  #lb { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; z-index: 20;
+    flex-direction: column; }
+  #lb.on { display: flex; }
+  #lb .bar { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: var(--panel); }
+  #lb .bar .st { font-weight: 700; }
+  #lb .bar .st.sel { color: var(--sel); }
+  #lb .img { flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 10px; }
+  #lb img { max-width: 100%; box-shadow: 0 0 30px #000; }
+  #lb.fit img { max-height: calc(100vh - 70px); }
+  #toast { position: fixed; bottom: 16px; right: 16px; background: #3a1f1f; color: #ffb4a8;
+    padding: 10px 14px; border-radius: 8px; display: none; z-index: 30; }
+</style>
+</head>
+<body>
+<div id="top">
+  <h1>scriptocr viewer</h1>
+  <div id="tabs">
+    <button data-v="docs" class="on">Documents</button>
+    <button data-v="pages">Pages</button>
+    <button data-v="selected">Selected</button>
+  </div>
+  <span id="status"></span>
+  <span id="selcount">0 pages selected</span>
+  <span id="outdir"></span>
+</div>
+<div id="layout">
+  <div id="side"></div>
+  <div id="main"></div>
+</div>
+<div id="lb">
+  <div class="bar">
+    <button onclick="LB.close()">✕ close</button>
+    <button onclick="LB.step(-1)">◀ prev</button>
+    <button onclick="LB.step(1)">next ▶</button>
+    <span id="lbtitle"></span>
+    <span id="lbstate" class="st"></span>
+    <button class="primary" onclick="LB.toggle()">toggle select <kbd>space</kbd></button>
+    <button onclick="LB.fit()">fit / 1:1</button>
+    <a id="lbpdf" target="_blank">open original PDF ↗</a>
+  </div>
+  <div class="img"><img id="lbimg" alt=""></div>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const h = (tag, attrs = {}, ...kids) => {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'html') el.innerHTML = v;
+    else if (v !== null && v !== undefined) el.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k !== null && k !== undefined) el.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return el;
+};
+const fmt = n => (n ?? 0).toLocaleString();
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.style.display = 'none', 4000); };
+const api = async (url, body) => {
+  const r = await fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body) } : undefined);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+};
+
+// ---- state -----------------------------------------------------------------
+const S = {
+  docs: [], byId: new Map(), summary: null, sel: new Map(),   // sha -> Set(page)
+  view: 'docs', outDir: '',
+  f: { q: '', source: '', dense: false, scanned: false, forms: false, charts: false, tables: false,
+       hasSel: false, minP: '', maxP: '', sort: 'source' },
+  list: [], listShown: 300, cur: null,              // current document view
+  pg: { source: '', filters: new Set(), offset: 0, total: 0, items: [] },
+  lastClick: null,
+};
+const selSet = sha => { let s = S.sel.get(sha); if (!s) S.sel.set(sha, s = new Set()); return s; };
+const isSel = (sha, p) => S.sel.get(sha)?.has(p) ?? false;
+const selCount = () => { let n = 0; for (const s of S.sel.values()) n += s.size; return n; };
+const applySelected = map => { S.sel = new Map(Object.entries(map).map(([k, v]) => [k, new Set(v)])); };
+const plural = (n, w) => `${fmt(n)} ${w}${n === 1 ? '' : 's'}`;
+const refreshCount = () => { $('#selcount').textContent = `${plural(selCount(), 'page')} selected`; };
+
+// ---- selection toggles: applied to disk on the server immediately ---------------
+async function setSelected(doc, pages, selected) {
+  try {
+    const r = await api('/api/select', { doc_id: doc.id, pages, selected });
+    S.sel.set(r.sha, new Set(r.pages));
+    if (!r.pages.length) S.sel.delete(r.sha);
+    refreshCount();
+    document.querySelectorAll(`.card[data-sha="${r.sha}"]`).forEach(c =>
+      c.classList.toggle('sel', S.sel.get(r.sha)?.has(+c.dataset.page) ?? false));
+    if (S.view === 'docs' && !S.cur) renderDocList();
+    LB.refresh();
+  } catch (e) { toast(`selection failed: ${e.message}`); }
+}
+const togglePage = (doc, p) => setSelected(doc, [p], !isSel(doc.sha, p));
+
+// ---- loading -------------------------------------------------------------------
+async function load() {
+  $('#status').textContent = 'loading catalogue…';
+  const d = await api('/api/docs');
+  S.docs = d.docs; S.byId = new Map(d.docs.map(x => [x.id, x])); S.summary = d.summary;
+  S.outDir = d.out_dir; applySelected(d.selected);
+  $('#outdir').textContent = d.out_dir;
+  $('#status').textContent = d.summary.db_ok ? '' : 'no Postgres: provenance and filters unavailable';
+  refreshCount();
+}
+
+// ---- documents view -------------------------------------------------------------
+function filteredDocs() {
+  const f = S.f, q = f.q.trim().toLowerCase();
+  let out = S.docs.filter(d =>
+    (!f.source || d.source === f.source) &&
+    (!q || d.title.toLowerCase().includes(q) || d.source_id.toLowerCase().includes(q) || d.sha.startsWith(q)) &&
+    (!f.dense || (d.dense_frac ?? 0) >= 0.5) &&
+    (!f.scanned || (d.scanned ?? 0) > 0) &&
+    (!f.forms || (d.forms ?? 0) > 0) &&
+    (!f.charts || (d.chart_pages ?? 0) > 0) &&
+    (!f.tables || (d.table_pages ?? 0) > 0) &&
+    (!f.hasSel || S.sel.has(d.sha)) &&
+    (f.minP === '' || (d.n_pages ?? 0) >= +f.minP) &&
+    (f.maxP === '' || (d.n_pages ?? Infinity) <= +f.maxP));
+  const cmp = {
+    source: (a, b) => a.source.localeCompare(b.source) || a.id - b.id,
+    pages: (a, b) => (b.n_pages ?? -1) - (a.n_pages ?? -1),
+    dense: (a, b) => (b.dense_frac ?? -1) - (a.dense_frac ?? -1),
+    tables: (a, b) => (b.table_pages ?? -1) - (a.table_pages ?? -1),
+    charts: (a, b) => (b.chart_pages ?? -1) - (a.chart_pages ?? -1),
+    scanned: (a, b) => (b.scanned ?? -1) - (a.scanned ?? -1),
+    title: (a, b) => a.title.localeCompare(b.title),
+  }[f.sort];
+  return out.sort(cmp);
+}
+
+function renderDocSide() {
+  const side = $('#side'); side.innerHTML = '';
+  const f = S.f, sm = S.summary;
+  side.append(h('input', { placeholder: 'search title / id / sha', value: f.q, style: 'width:100%',
+    oninput: e => { f.q = e.target.value; S.listShown = 300; renderDocList(); } }));
+  side.append(h('h3', {}, 'source'));
+  const srcs = Object.entries(sm.sources).sort((a, b) => b[1].docs - a[1].docs);
+  const row = (name, n, pages) => h('div', { class: 'src' + (f.source === name ? ' on' : ''),
+    onclick: () => { f.source = name; S.listShown = 300; renderDocSide(); renderDocList(); } },
+    h('span', {}, name || 'all sources'), h('span', { class: 'n', title: `${fmt(pages)} pages` }, fmt(n)));
+  side.append(row('', sm.docs, sm.pages));
+  for (const [name, s] of srcs) side.append(row(name, s.docs, s.pages));
+  side.append(h('h3', {}, 'documents with'));
+  const cb = (key, label) => h('label', {}, h('input', { type: 'checkbox', ...(f[key] ? { checked: '' } : {}),
+    onchange: e => { f[key] = e.target.checked; S.listShown = 300; renderDocList(); } }), label);
+  side.append(cb('tables', 'table pages (sampled)'), cb('charts', 'chart pages (sampled)'),
+    cb('scanned', 'scanned pages'), cb('forms', 'form pages'), cb('dense', 'dense ≥ 50%'),
+    cb('hasSel', 'selected pages'));
+  side.append(h('h3', {}, 'page count'));
+  side.append(h('div', { style: 'display:flex;gap:6px;align-items:center' },
+    h('input', { type: 'number', placeholder: 'min', value: f.minP, oninput: e => { f.minP = e.target.value; renderDocList(); } }),
+    '–', h('input', { type: 'number', placeholder: 'max', value: f.maxP, oninput: e => { f.maxP = e.target.value; renderDocList(); } })));
+  side.append(h('h3', {}, 'sort'));
+  const sel = h('select', { onchange: e => { f.sort = e.target.value; renderDocList(); } },
+    ...[['source', 'source'], ['pages', 'most pages'], ['tables', 'most table pages'],
+        ['charts', 'most chart pages'], ['scanned', 'most scanned pages'], ['dense', 'densest'],
+        ['title', 'title']].map(([v, l]) => h('option', { value: v, ...(f.sort === v ? { selected: '' } : {}) }, l)));
+  side.append(sel);
+  side.append(h('div', { class: 'help', html:
+    'Click a document to see its pages. In a document: click a page to select it, ' +
+    '<kbd>shift</kbd>+click for a range, <kbd>enter</kbd> or double-click to zoom, ' +
+    '<kbd>space</kbd> toggles, arrows move, <kbd>esc</kbd> goes back, <kbd>[</kbd> <kbd>]</kbd> previous / next document.' +
+    '<br>Badges: <b>T</b> table · <b>B</b> borderless table · <b>C</b> chart · <b>S</b> scanned · <b>F</b> form · <b>R</b> rotated ' +
+    '(from stage-2 signals; T/B/C exist only for the 8 sampled pages per document).' }));
+}
+
+function docBadges(d) {
+  const b = [];
+  if (d.table_pages) b.push(h('span', { class: 'T', title: 'table pages in the density sample' }, `T${d.table_pages}`));
+  if (d.borderless_pages) b.push(h('span', { class: 'B', title: 'borderless table pages' }, `B${d.borderless_pages}`));
+  if (d.chart_pages) b.push(h('span', { class: 'C', title: 'chart pages in the density sample' }, `C${d.chart_pages}`));
+  if (d.scanned) b.push(h('span', { class: 'S', title: 'pages with no text layer' }, `S${d.scanned}`));
+  if (d.forms) b.push(h('span', { class: 'F', title: 'pages with form widgets' }, `F${d.forms}`));
+  if (d.rotated) b.push(h('span', { class: 'R', title: 'rotated pages' }, `R${d.rotated}`));
+  return h('span', { class: 'badges' }, ...b);
+}
+
+function renderDocList() {
+  const main = $('#main'); main.innerHTML = '';
+  S.list = filteredDocs();
+  const pages = S.list.reduce((a, d) => a + (d.n_pages ?? 0), 0);
+  main.append(h('div', { class: 'pager' }, `${plural(S.list.length, 'document')} · ${plural(pages, 'page')}`));
+  if (!S.list.length) return main.append(h('div', { class: 'empty' }, 'nothing matches these filters'));
+  const tbl = h('table', { class: 'docs' }, h('thead', {}, h('tr', {},
+    h('th', {}, 'source'), h('th', {}, 'title'), h('th', { class: 'num' }, 'pages'),
+    h('th', {}, 'signals'), h('th', {}, 'licence'), h('th', { class: 'num' }, 'selected'))));
+  const tb = h('tbody');
+  for (const d of S.list.slice(0, S.listShown)) {
+    const n = S.sel.get(d.sha)?.size ?? 0;
+    tb.append(h('tr', { onclick: () => openDoc(d.id) },
+      h('td', {}, h('span', { class: 'pill' }, d.source)),
+      h('td', { class: 't' }, d.title, d.dupes ? h('span', { class: 'pill', title: 'same bytes from another source' }, `×${d.dupes + 1}`) : null),
+      h('td', { class: 'num' }, d.n_pages ?? '?'),
+      h('td', {}, docBadges(d), d.dense_frac != null ? h('span', { class: 'pill', title: 'dense fraction of sampled pages' }, `${Math.round(d.dense_frac * 100)}%`) : null),
+      h('td', {}, h('span', { class: 'pill' }, d.license)),
+      h('td', { class: 'num' }, n ? h('span', { class: 'pill sel' }, n) : '')));
+  }
+  tbl.append(tb); main.append(tbl);
+  if (S.list.length > S.listShown)
+    main.append(h('div', { class: 'pager' }, h('button', { onclick: () => { S.listShown += 500; renderDocList(); } },
+      `show more (${fmt(S.list.length - S.listShown)} remaining)`)));
+}
+
+// ---- one document ------------------------------------------------------------------
+function pageBadges(sig) {
+  if (!sig) return null;
+  const b = [];
+  if (sig.is_table_page) b.push(h('span', { class: 'T', title: `${sig.n_tables} tables, max ${sig.max_table_cells} cells` }, 'T'));
+  if (sig.n_borderless_tables) b.push(h('span', { class: 'B', title: 'borderless table' }, 'B'));
+  if (sig.is_chart_page) b.push(h('span', { class: 'C', title: sig.chart_kinds || 'chart' }, 'C'));
+  if (sig.has_text_layer === false || sig.covered_by_one_image) b.push(h('span', { class: 'S', title: 'no text layer / full-bleed image' }, 'S'));
+  if (sig.n_widgets > 0) b.push(h('span', { class: 'F', title: `${sig.n_widgets} form widgets` }, 'F'));
+  if (sig.rotation || sig.text_angle) b.push(h('span', { class: 'R', title: `rotation ${sig.rotation}, text angle ${sig.text_angle}` }, 'R'));
+  return h('span', { class: 'badges' }, ...b);
+}
+
+function card(doc, p, { sig = null, sub = null } = {}) {
+  const c = h('div', { class: 'card' + (isSel(doc.sha, p) ? ' sel' : ''), tabindex: '0',
+    'data-sha': doc.sha, 'data-page': p, 'data-doc': doc.id },
+    h('div', { class: 'tick' }, '✓'),
+    h('img', { src: `/thumb/${doc.sha}/${p}?w=360`, loading: 'lazy', decoding: 'async', alt: `page ${p}` }),
+    h('div', { class: 'cap' }, h('span', { class: 'p' }, `p${p}`), pageBadges(sig)),
+    sub ? h('div', { class: 'sub', title: sub }, sub) : null);
+  c.addEventListener('click', e => {
+    const cards = [...c.parentElement.children];
+    const i = cards.indexOf(c);
+    if (e.shiftKey && S.lastClick && S.lastClick.parent === c.parentElement) {
+      const j = S.lastClick.index, lo = Math.min(i, j), hi = Math.max(i, j);
+      const want = !isSel(doc.sha, p);
+      const byDoc = new Map();
+      for (const k of cards.slice(lo, hi + 1)) {
+        const d = S.byId.get(+k.dataset.doc); const arr = byDoc.get(d) || []; arr.push(+k.dataset.page); byDoc.set(d, arr);
+      }
+      for (const [d, ps] of byDoc) setSelected(d, ps, want);
+    } else togglePage(doc, p);
+    S.lastClick = { parent: c.parentElement, index: i };
+    c.focus();
+  });
+  c.addEventListener('dblclick', () => LB.open(c));
+  return c;
+}
+
+async function openDoc(id) {
+  S.cur = { id, loading: true };
+  const main = $('#main'); main.innerHTML = '';
+  main.append(h('div', { class: 'pager' }, 'rendering…'));
+  let r;
+  try { r = await api(`/api/doc/${id}`); } catch (e) { return toast(e.message); }
+  if (S.cur?.id !== id) return;
+  const d = r.doc, n = r.n_pages, sig = new Map(r.pages.map(p => [p.page_no, p]));
+  S.sel.set(d.sha, new Set(r.selected)); if (!r.selected.length) S.sel.delete(d.sha);
+  S.cur = { id, doc: d, n };
+  if (location.hash !== `#doc/${id}`) history.pushState(null, '', `#doc/${id}`);
+  main.innerHTML = '';
+  const idx = S.list.findIndex(x => x.id === id);
+  const all = () => Array.from({ length: n }, (_, i) => i + 1);
+  main.append(h('div', { class: 'dochead' },
+    h('button', { onclick: () => { S.cur = null; render(); } }, '◀ list'),
+    h('button', { onclick: () => stepDoc(-1), disabled: idx <= 0 ? '' : null }, '[ prev'),
+    h('button', { onclick: () => stepDoc(1), disabled: idx < 0 || idx >= S.list.length - 1 ? '' : null }, 'next ]'),
+    h('span', { class: 'title' }, d.title),
+    h('span', { class: 'pill' }, d.source), h('span', { class: 'pill' }, d.license),
+    h('span', { class: 'meta' }, `${fmt(n)} pages · ${idx >= 0 ? `${idx + 1} of ${fmt(S.list.length)} in list · ` : ''}${d.source_id}`),
+    d.url ? h('a', { href: d.url, target: '_blank' }, 'source ↗') : null,
+    h('a', { href: `/pdf/${d.sha}`, target: '_blank' }, 'original PDF ↗'),
+    h('span', { style: 'flex:1' }),
+    h('button', { onclick: () => setSelected(d, all(), true) }, 'select all pages'),
+    h('button', { class: 'danger', onclick: () => setSelected(d, all(), false) }, 'clear document')));
+  if (!n) return main.append(h('div', { class: 'empty' }, 'this file has no readable pages (corrupt or encrypted)'));
+  const grid = h('div', { class: 'grid' });
+  for (let p = 1; p <= n; p++) grid.append(card(d, p, { sig: sig.get(p) }));
+  main.append(grid);
+  main.scrollTop = 0;
+  grid.firstChild?.focus({ preventScroll: true });
+}
+function stepDoc(delta) {
+  const i = S.list.findIndex(x => x.id === S.cur?.id);
+  const next = S.list[i + delta];
+  if (next) openDoc(next.id);
+}
+
+// ---- pages view: the whole corpus filtered by stage-2 signals ---------------------------
+function renderPagesSide() {
+  const side = $('#side'); side.innerHTML = '';
+  const pg = S.pg;
+  side.append(h('h3', {}, 'source'));
+  const srcs = Object.entries(S.summary.sources).sort((a, b) => b[1].pages - a[1].pages);
+  const row = (name, n) => h('div', { class: 'src' + (pg.source === name ? ' on' : ''),
+    onclick: () => { pg.source = name; pg.offset = 0; renderPagesSide(); loadPages(); } },
+    h('span', {}, name || 'all sources'), h('span', { class: 'n' }, fmt(n)));
+  side.append(row('', S.summary.pages));
+  for (const [name, s] of srcs) side.append(row(name, s.pages));
+  side.append(h('h3', {}, 'pages that are'));
+  const chips = h('div', { class: 'chips' });
+  for (const [k, l] of [['table', 'table'], ['borderless', 'borderless table'], ['chart', 'chart'],
+                        ['scanned', 'scanned'], ['form', 'form'], ['rotated', 'rotated']])
+    chips.append(h('span', { class: 'chip' + (pg.filters.has(k) ? ' on' : ''),
+      onclick: () => { pg.filters.has(k) ? pg.filters.delete(k) : pg.filters.add(k); pg.offset = 0; renderPagesSide(); loadPages(); } }, l));
+  side.append(chips);
+  side.append(h('div', { class: 'help', html:
+    'Filters come from stage 2: text layer, widgets and rotation are known for every inspected page; ' +
+    'table and chart flags only for the ~8 pages sampled per document (<code>socr density</code>). ' +
+    'Filters combine with AND. Documents not yet inspected do not appear here — use the Documents tab.' }));
+}
+async function loadPages() {
+  const main = $('#main'); main.innerHTML = '';
+  main.append(h('div', { class: 'pager' }, 'querying…'));
+  const pg = S.pg;
+  const qs = new URLSearchParams({ source: pg.source, f: [...pg.filters].join(','), offset: pg.offset, limit: 200 });
+  let r;
+  try { r = await api(`/api/pages?${qs}`); } catch (e) { return toast(e.message); }
+  if (S.view !== 'pages') return;
+  applySelected(r.selected); refreshCount();
+  pg.total = r.total; pg.items = r.items;
+  main.innerHTML = '';
+  const pager = () => h('div', { class: 'pager' },
+    h('button', { onclick: () => { pg.offset = Math.max(0, pg.offset - 200); loadPages(); }, disabled: pg.offset ? null : '' }, '◀'),
+    `${fmt(pg.offset + 1)}–${fmt(Math.min(pg.offset + 200, r.total))} of ${fmt(r.total)} pages`,
+    h('button', { onclick: () => { pg.offset += 200; loadPages(); }, disabled: pg.offset + 200 < r.total ? null : '' }, '▶'));
+  main.append(pager());
+  if (!r.items.length) return main.append(h('div', { class: 'empty' }, 'no pages match'));
+  const grid = h('div', { class: 'grid' });
+  for (const it of r.items) {
+    const d = S.byId.get(it.doc_id);
+    grid.append(card(d, it.page_no, { sub: `${d.source} · ${d.title}` }));
+  }
+  main.append(grid, pager());
+  main.scrollTop = 0;
+}
+
+// ---- selected view ---------------------------------------------------------------------
+async function renderSelected() {
+  $('#side').innerHTML = '';
+  $('#side').append(h('h3', {}, 'output folder'), h('div', { style: 'font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all' }, S.outDir),
+    h('div', { class: 'help', html: 'Every selected page is already on disk as <code>pages/&lt;source&gt;/&lt;sha&gt;_p&lt;n&gt;.pdf</code>, ' +
+      'with <code>selection.json</code> as the source of truth and <code>metadata.jsonl</code> (one row per page: provenance, licence, catalogue record, PDF facts, page signals, table/chart density, text layer). ' +
+      'Click a page here to remove it.' }));
+  const main = $('#main'); main.innerHTML = '';
+  let r;
+  try { r = await api('/api/selection'); } catch (e) { return toast(e.message); }
+  if (S.view !== 'selected') return;
+  const bySrc = {};
+  for (const d of r.docs) { bySrc[d.source] = (bySrc[d.source] || 0) + d.pages.length; }
+  main.append(h('div', { class: 'pager' }, `${plural(r.count, 'page')} from ${plural(r.docs.length, 'document')} · `,
+    ...Object.entries(bySrc).sort((a, b) => b[1] - a[1]).map(([s, n]) => h('span', { class: 'pill' }, `${s} ${n}`))));
+  if (!r.docs.length) return main.append(h('div', { class: 'empty' }, 'nothing selected yet'));
+  for (const sd of r.docs) {
+    const d = S.byId.get(sd.id);
+    if (!d) continue;
+    main.append(h('div', { class: 'dochead', style: 'margin-top:14px' },
+      h('a', { href: '#', onclick: e => { e.preventDefault(); switchView('docs'); openDoc(d.id); } }, sd.title),
+      h('span', { class: 'pill' }, sd.source), h('span', { class: 'meta' }, plural(sd.pages.length, 'page')),
+      h('span', { style: 'flex:1' }),
+      h('button', { class: 'danger', onclick: () => setSelected(d, sd.pages, false).then(renderSelected) }, 'remove all')));
+    const grid = h('div', { class: 'grid' });
+    for (const p of sd.pages) grid.append(card(d, p));
+    main.append(grid);
+  }
+}
+
+// ---- lightbox ---------------------------------------------------------------------------
+const LB = {
+  cur: null,
+  open(c) { this.cur = c; this.show(); $('#lb').classList.add('on', 'fit'); },
+  close() { $('#lb').classList.remove('on'); this.cur?.focus(); this.cur = null; },
+  show() {
+    const c = this.cur; if (!c) return;
+    const d = S.byId.get(+c.dataset.doc), p = +c.dataset.page;
+    $('#lbimg').src = `/thumb/${d.sha}/${p}?w=1600`;
+    $('#lbtitle').textContent = `${d.source} · ${d.title} · page ${p}${S.cur?.n ? ` / ${S.cur.n}` : ''}`;
+    $('#lbpdf').href = `/pdf/${d.sha}#page=${p}`;
+    this.refresh();
+    c.scrollIntoView({ block: 'nearest' });
+  },
+  refresh() {
+    const c = this.cur; if (!c) return;
+    const on = isSel(c.dataset.sha, +c.dataset.page);
+    const st = $('#lbstate'); st.textContent = on ? '✓ selected' : 'not selected'; st.classList.toggle('sel', on);
+  },
+  step(delta) {
+    const c = this.cur; if (!c) return;
+    const n = delta > 0 ? c.nextElementSibling : c.previousElementSibling;
+    if (n && n.classList.contains('card')) { this.cur = n; this.show(); }
+  },
+  toggle() { const c = this.cur; if (c) togglePage(S.byId.get(+c.dataset.doc), +c.dataset.page); },
+  fit() { $('#lb').classList.toggle('fit'); },
+};
+
+// ---- keyboard ----------------------------------------------------------------------------
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, select, textarea')) return;
+  const lb = $('#lb').classList.contains('on');
+  if (lb) {
+    if (e.key === 'Escape') LB.close();
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') LB.step(1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') LB.step(-1);
+    else if (e.key === ' ') LB.toggle();
+    else if (e.key === 'f') LB.fit();
+    else return;
+    return e.preventDefault();
+  }
+  const c = document.activeElement?.classList?.contains('card') ? document.activeElement : null;
+  if (e.key === 'Escape' && S.view === 'docs' && S.cur) { S.cur = null; render(); return; }
+  if (e.key === '[' && S.view === 'docs' && S.cur) return stepDoc(-1);
+  if (e.key === ']' && S.view === 'docs' && S.cur) return stepDoc(1);
+  if (!c) return;
+  const grid = c.parentElement, cards = [...grid.children], i = cards.indexOf(c);
+  const cols = Math.max(1, Math.round(grid.clientWidth / (c.offsetWidth + 10)));
+  let j = null;
+  if (e.key === 'ArrowRight') j = i + 1; else if (e.key === 'ArrowLeft') j = i - 1;
+  else if (e.key === 'ArrowDown') j = i + cols; else if (e.key === 'ArrowUp') j = i - cols;
+  else if (e.key === ' ') { togglePage(S.byId.get(+c.dataset.doc), +c.dataset.page); return e.preventDefault(); }
+  else if (e.key === 'Enter') { LB.open(c); return e.preventDefault(); }
+  if (j !== null) { cards[Math.max(0, Math.min(cards.length - 1, j))]?.focus(); e.preventDefault(); }
+});
+
+// ---- views ---------------------------------------------------------------------------------
+function switchView(v) {
+  S.view = v;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  render();
+}
+function render() {
+  if (S.view === 'docs') { renderDocSide(); S.cur ? openDoc(S.cur.id) : renderDocList(); }
+  else if (S.view === 'pages') { renderPagesSide(); loadPages(); }
+  else renderSelected();
+  const want = S.view === 'docs' && S.cur ? `#doc/${S.cur.id}` : `#${S.view}`;
+  if (location.hash !== want) history.pushState(null, '', want);
+}
+// The URL names the view, so a document can be bookmarked and the back button works.
+function route() {
+  const m = location.hash.match(/^#doc\/(\d+)$/);
+  if (m && S.byId.has(+m[1])) { S.view = 'docs'; S.cur = { id: +m[1] }; }
+  else { S.view = ['pages', 'selected'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'docs'; S.cur = null; }
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
+  render();
+}
+window.addEventListener('popstate', route);
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => { S.cur = null; switchView(b.dataset.v); }));
+load().then(route).catch(e => toast(`failed to load: ${e.message}`));
+</script>
+</body>
+</html>

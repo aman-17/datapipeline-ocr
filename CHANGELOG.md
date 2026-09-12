@@ -12,6 +12,22 @@ again if the code were ever "simplified" back.
 
 ### Added
 
+**Stage 3 — hand-picking the mixture (`socr viewer`).** A local web viewer over
+every stored document: pages rendered on demand and cached (the ~520k-page
+store is never pre-rendered — tens of gigabytes for pages nobody looks at),
+stage-2 signals as corpus-wide page filters (scanned / form / rotated for every
+inspected page; table / borderless / chart for the density sample), and one
+click per page to copy it into `~/Desktop/scriptocr-selected/` as a single-page
+PDF with `selection.json` + `metadata.jsonl`, one row per page carrying the
+full catalogue record, PDF facts, page signals and density measured at
+selection time, and the text layer.
+Pages are lifted with pikepdf, not re-rendered, so the content stream, fonts and
+text layer survive for a later ground-truth stage. Selection is a file rather
+than a catalogue table on purpose: it is a person's working set and must
+survive without Postgres; the viewer also falls back to walking the content
+store if the database is down. `--rebuild` re-extracts everything listed in
+`selection.json`.
+
 **Stage 1 — acquisition.** Collect PDFs and record where they came from. A
 document is complete when its bytes are in the content-addressed store and it
 has a provenance row in Postgres.

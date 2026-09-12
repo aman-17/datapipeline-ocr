@@ -1,0 +1,45 @@
+=== post charts-tables-v1 12:21
+usage: sebas_gt_run.py [-h] --pdfs PDFS --meta META --out OUT
+                       [--stage {select,parse,post,all}] [--workers WORKERS]
+sebas_gt_run.py: error: argument --pdfs: expected one argument
+=== wait for vector facts 12:21
+=== post charts-tables-v1 12:33
+post 100/3160
+post 200/3160
+post 300/3160
+post 400/3160
+post 500/3160
+post 600/3160
+post 700/3160
+post 800/3160
+post 900/3160
+post 1000/3160
+post 1100/3160
+post 1200/3160
+post 1300/3160
+post 1400/3160
+post 1500/3160
+post 1600/3160
+post 1700/3160
+post 1800/3160
+post 1900/3160
+post 2000/3160
+post 2100/3160
+post 2200/3160
+post 2300/3160
+post 2400/3160
+post 2500/3160
+post 2600/3160
+post 2700/3160
+post 2800/3160
+post 2900/3160
+post 3000/3160
+post 3100/3160
+post done: 3160 pages, {'P1': 1057, 'P2': 727, 'ship': 1376}; tables 7297 clean 4607
+normalizer changes: {'tables': 7248, 'inline_markup_stripped': 29587, 'br_to_space': 15060, 'sup_unicode': 2422, 'soft_hyphen_joined': 105, 'phantom_or_blank_row_removed': 162, 'minus_normalized': 1889, 'dot_leaders_stripped': 500}
+=== wait for vector facts 13:25
+=== stats charts-tables-v1 14:07
+| dominant font: Calibri | 135 | 4.3% |
+| dominant font: TimesNewRoman | 63 | 2.0% |
+
+=== STATS DONE 14:08

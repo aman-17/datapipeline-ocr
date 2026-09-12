@@ -1,0 +1,57 @@
+# magazine_archives seeds — group "us-federal-tables" (validated 2026-09-10)
+#
+# Format: <index-page-url> | <licence> | <label> | follow=<regex>
+# The line is split on "|", so a follow regex can never contain alternation.
+# Every seed below was probed with the adapter's own HREF/looks_like_pdf_url/
+# RobotsCache path: index fetched, PDF links counted, one PDF fetched (200,
+# %PDF- magic) and checked with pymupdf for a text layer and tables.
+#
+# Run:  uv run python -m scriptocr discover magazine_archives --query seeds/magazine_archives/us-federal-tables.txt
+#
+# Host notes:
+#   esmis.nal.usda.gov publishes "Crawl-delay: 10" for *; PoliteClient does
+#     not read Crawl-delay, so give that host per_host_rps<=0.1 when running.
+#   www.eia.gov robots disallows "/*archive/" (wildcard the stdlib parser
+#     cannot see) — the MER page below links only /pdf/ paths (0 archive hrefs);
+#     do NOT seed /totalenergy/data/monthly/previous.php (639 archive/ links).
+#   federalreserve.gov states no licence on the pages reached; left blank.
+
+# --- labor (BLS) ------------------------------------------------------------
+https://www.bls.gov/bls/news-release/empsit.htm | public-domain | bls-employment-situation
+https://www.bls.gov/bls/news-release/cpi.htm | public-domain | bls-cpi
+
+# --- health (CDC MMWR, one issue PDF per week; other years: /mmwr/indexYYYY.html)
+https://www.cdc.gov/mmwr/index2025.html | public-domain | cdc-mmwr-2025
+https://www.cdc.gov/mmwr/index2020.html | public-domain | cdc-mmwr-2020
+
+# --- agriculture / weather (USDA ESMIS; publication pages paginate with ?page=N)
+https://esmis.nal.usda.gov/ | public-domain | usda-esmis-latest | follow=/publication/[a-z0-9-]+$
+https://esmis.nal.usda.gov/publication/crop-production | public-domain | usda-nass-crop-production
+https://esmis.nal.usda.gov/publication/weekly-weather-and-crop-bulletin | public-domain | usda-noaa-weekly-weather-crop-bulletin
+
+# --- finance (Federal Reserve Z.1, Treasury Bulletin) ------------------------
+https://www.federalreserve.gov/releases/z1/release-dates.htm | | fed-z1-financial-accounts
+https://fiscal.treasury.gov/accounting/treasury-bulletin/previous | public-domain | treasury-bulletin
+
+# --- justice (BJS; list pages paginate ?page=0..87) --------------------------
+https://bjs.ojp.gov/library/publications/list | public-domain | bjs-publications | follow=/library/publications/[a-z0-9-]*\d[a-z0-9-]*$
+https://bjs.ojp.gov/library/publications/list?page=1 | public-domain | bjs-publications-p1 | follow=/library/publications/[a-z0-9-]*\d[a-z0-9-]*$
+
+# --- minerals (USGS Minerals Yearbook / MCS / MIS chapters via 85 commodity pages)
+https://www.usgs.gov/centers/national-minerals-information-center/minerals-yearbook-metals-and-minerals | public-domain | usgs-minerals-yearbook | follow=/centers/nmic/[a-z-]+-statistics-and-information$
+
+# --- demographics / economics (Census www2 directory listings; other years follow the same shape)
+https://www2.census.gov/library/publications/2024/ | public-domain | census-publications-2024 | follow=/library/publications/2024/[a-z0-9-]+/$
+https://www2.census.gov/library/publications/2021/ | public-domain | census-publications-2021 | follow=/library/publications/2021/[a-z0-9-]+/$
+
+# --- tax (IRS Statistics of Income Bulletin, 169 issue pages back to 1981) ---
+https://www.irs.gov/statistics/soi-tax-stats-soi-bulletins | public-domain | irs-soi-bulletin | follow=/statistics/soi-tax-stats-[a-z-]*bulletin[a-z-]*-\d{4}$
+
+# --- climate (NOAA CPC Climate Diagnostics Bulletin, monthly since 2007) -----
+https://www.cpc.ncep.noaa.gov/products/CDB/CDB_Archive_pdf/pdf_CDB_archive.shtml | public-domain | noaa-cpc-climate-diagnostics-bulletin
+
+# --- energy (EIA Monthly Energy Review, section + per-table PDFs) ------------
+https://www.eia.gov/totalenergy/data/monthly/ | public-domain | eia-monthly-energy-review
+
+# --- education (NCES Condition of Education indicator PDFs + full reports) ---
+https://nces.ed.gov/programs/coe/ | public-domain | nces-condition-of-education | follow=/programs/coe/indicator/[a-z]{3}

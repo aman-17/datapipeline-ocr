@@ -1,0 +1,15 @@
+=== 12 post shards + 2 vector-facts passes launched 20:13
+=== 12 post shards + 2 vector-facts passes launched 20:40
+=== merge magazines-10k-pages 01:12
+manifest: 9967 rows from 6 shards
+review_queue: 9734 rows from 6 shards
+=== stats magazines-10k-pages 01:12
+                                                  ~^^^^^^^^^
+KeyError: 'slice'
+=== merge sota-v1-sample 01:12
+manifest: 10460 rows from 6 shards
+review_queue: 10201 rows from 6 shards
+=== stats sota-v1-sample 01:12
+                                                  ~^^^^^^^^^
+KeyError: 'slice'
+=== SFT-DATA GT DONE 01:12

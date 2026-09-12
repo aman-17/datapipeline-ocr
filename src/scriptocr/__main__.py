@@ -9,6 +9,7 @@ inside a Modal worker that has no terminal.
     socr fetch --source govdocs1
     socr status
     socr verify
+    socr viewer
 """
 from __future__ import annotations
 
@@ -21,12 +22,19 @@ from pathlib import Path
 from .adapters.arxiv import ArXiv
 from .adapters.bis import BIS
 from .adapters.courtlistener import CourtListener
+from .adapters.dailymed import DailyMed
 from .adapters.edinet import Edinet
+from .adapters.eric import Eric
+from .adapters.eurlex import EurLex
 from .adapters.fraser import Fraser
 from .adapters.govdocs1 import GovDocs1
 from .adapters.govinfo import GovInfo
+from .adapters.hkex import HKEX
 from .adapters.internet_archive import InternetArchive
+from .adapters.search.magazine_archives import MagazineArchives
 from .adapters.municipal_acfr import MunicipalACFR
+from .adapters.ntrs import NTRS
+from .adapters.openalex import OpenAlex
 from .adapters.pubmed_central import PubMedCentral
 from .adapters.safedocs import SafeDocs
 from .adapters.search import Exa, Firecrawl, SerpApi
@@ -39,12 +47,18 @@ from .collector import discover, fetch_pending, verify_store
 from .content_store import ContentStore
 from .preprocess.pipeline import inspect_documents, measure_density, render_pages
 from .preprocess.store import PreprocessStore
+from .viewer.index import DocIndex
+from .viewer.selection import Selection
+from .viewer.server import App, serve
+from .viewer.thumbs import ThumbCache
 
 DATA_ROOT = Path(os.environ.get("SCRIPTOCR_DATA",
                                 Path.home() / "Desktop" / "scriptocr-data"))
 CAS_ROOT = DATA_ROOT / "cas"
 RENDER_ROOT = DATA_ROOT / "renders"
 STAGING_ROOT = DATA_ROOT / "staging"
+VIEWER_ROOT = DATA_ROOT / "viewer"          # thumbnails + page-count cache, evictable
+SELECTION_ROOT = Path.home() / "Desktop" / "scriptocr-selected"
 
 
 def build_adapter(name: str) -> SourceAdapter:
@@ -67,6 +81,8 @@ def build_adapter(name: str) -> SourceAdapter:
             return Exa()
         case "firecrawl":
             return Firecrawl()
+        case "magazine_archives":
+            return MagazineArchives()
         case "serpapi":
             return SerpApi()
         case "bis":
@@ -81,6 +97,20 @@ def build_adapter(name: str) -> SourceAdapter:
             return MunicipalACFR()
         case "edinet":
             return Edinet()
+        case "dailymed":
+            return DailyMed()
+        case "ntrs":
+            return NTRS()
+        case "eric":
+            return Eric()
+        case "eurlex":
+            return EurLex()
+        case "hkex":
+            # raises hkex.TermsNotAccepted unless SCRIPTOCR_HKEX_ACCEPT_TERMS=1:
+            # HKEXnews' Terms of Use forbid programmatic access / AI-training TDM
+            return HKEX()
+        case "openalex":
+            return OpenAlex()
         case _:
             raise SystemExit(f"unknown source: {name}")
 
@@ -108,6 +138,10 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
     match args.source:
         case "govdocs1":
             kwargs["zips"] = parse_range(args.zips)
+        case "magazine_archives":
+            if not args.query:
+                raise SystemExit("magazine_archives needs --query <seeds file path>")
+            kwargs["seeds_file"] = args.query
         case "internet_archive":
             if not args.query:
                 raise SystemExit(
@@ -132,6 +166,74 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
             kwargs["query"] = args.query or ""
             if args.court:
                 kwargs["court"] = args.court
+        case "dailymed":
+            if args.doc_types:
+                kwargs["doctypes"] = tuple(csv(args.doc_types))      # LOINC codes, or "all"
+            if args.drug_class:
+                kwargs["drug_class"] = args.drug_class
+            if args.drug_name:
+                kwargs["drug_name"] = args.drug_name
+            if args.end_date:
+                kwargs["published_before"] = args.end_date
+            if args.start_date is not None:
+                kwargs["published_after"] = args.start_date
+            kwargs["page_start"] = args.page_start
+            kwargs["page_stride"] = args.page_stride
+            if args.max_per_product is not None:
+                kwargs["max_per_product"] = args.max_per_product
+        case "ntrs":
+            kwargs["query"] = args.query or "*"          # empty q returns ZERO hits; "*" is match-all
+            if args.sti_types:
+                kwargs["sti_types"] = tuple(csv(args.sti_types))
+            if args.years:
+                kwargs["years"] = parse_range(args.years)
+            if args.center:
+                kwargs["center"] = args.center
+        case "eric":
+            if args.query:
+                kwargs["query"] = args.query
+            if args.min_year:
+                kwargs["min_year"] = args.min_year        # 1993 = born-digital floor
+            if args.end_year:
+                kwargs["max_year"] = args.end_year
+            if args.pub_types:
+                kwargs["pub_types"] = tuple(csv(args.pub_types))
+        case "eurlex":
+            if args.languages:
+                kwargs["languages"] = tuple(csv(args.languages))
+            if args.years:
+                kwargs["years"] = parse_range(args.years)
+            if args.resource_types:
+                kwargs["resource_types"] = tuple(csv(args.resource_types))
+            if args.directory_codes:
+                kwargs["directory_codes"] = tuple(csv(args.directory_codes))
+            if args.min_pages:
+                kwargs["min_pages"] = args.min_pages
+            if args.keep_daily_templates:
+                kwargs["skip_titles"] = None
+        case "hkex":
+            if args.doc_types:
+                kwargs["doc_types"] = tuple(csv(args.doc_types))
+            if args.languages:
+                kwargs["languages"] = tuple(csv(args.languages))
+            if args.start_date is not None:
+                kwargs["start_date"] = args.start_date
+            if args.end_date:
+                kwargs["end_date"] = args.end_date
+            if args.keep_cancelled:
+                kwargs["keep_cancelled"] = True
+        case "openalex":
+            if args.languages:
+                kwargs["languages"] = tuple(csv(args.languages))
+            if args.topics:
+                kwargs["topics"] = tuple(csv(args.topics))
+            kwargs["start_year"] = args.start_year
+            if args.end_year:
+                kwargs["end_year"] = args.end_year
+            if args.commercial_only:
+                kwargs["commercial_only"] = True
+            if args.max_per_source is not None:
+                kwargs["max_per_source"] = args.max_per_source
         case "exa" | "firecrawl" | "serpapi":
             if not args.query:
                 raise SystemExit(f"{args.source} needs --query")
@@ -365,6 +467,23 @@ def run_campaign(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_viewer(args: argparse.Namespace) -> int:
+    """Browse every page and hand-pick the SFT mixture into a Desktop folder."""
+    print("loading the catalogue...", flush=True)
+    index = DocIndex(args.dsn, Path(args.cas), Path(args.thumbs))
+    selection = Selection(Path(args.out).expanduser(), catalogue=index)
+    if args.rebuild:
+        selection.rebuild()
+        return 0
+    s = index.summary()
+    print(f"  {s['docs']} documents, {s['pages']} pages counted so far, "
+          f"{selection.count()} pages already selected")
+    index.count_missing_pages_in_background()
+    serve(App(index, ThumbCache(Path(args.thumbs) / "thumbs"), selection),
+          host=args.host, port=args.port, open_browser=not args.no_open)
+    return 0
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     catalog = Catalog(args.dsn)
     print("catalogue:", json.dumps(catalog.counts(), indent=1))
@@ -439,6 +558,37 @@ def build_parser() -> argparse.ArgumentParser:
                    help="municipal_acfr: year range, e.g. 2018-2024")
     d.set_defaults(handler=cmd_discover)
 
+    d.add_argument("--drug-class", default=None, dest="drug_class",
+                   help="dailymed: EPC/MoA/PE class name or code")
+    d.add_argument("--drug-name", default=None, dest="drug_name",
+                   help="dailymed: product-name substring, e.g. metformin")
+    d.add_argument("--page-start", type=int, default=1, dest="page_start",
+                   help="dailymed: 1-based list page to begin at")
+    d.add_argument("--page-stride", type=int, default=1, dest="page_stride",
+                   help="dailymed: step between list pages (spreads a budget over the archive)")
+    d.add_argument("--max-per-product", type=int, default=None, dest="max_per_product",
+                   help="dailymed: labels per product name (default 1)")
+    d.add_argument("--sti-types", default=None, dest="sti_types",
+                   help="ntrs: comma-separated stiType codes (default: adapters.ntrs.DEFAULT_MIX)")
+    d.add_argument("--center", default=None, help="ntrs: NASA centre code filter, e.g. GRC, LaRC, JPL")
+    d.add_argument("--pub-types", default=None, dest="pub_types",
+                   help="eric: comma-separated ERIC publication types, AND-ed with --query")
+    d.add_argument("--languages", default=None,
+                   help="eurlex: two-letter editions e.g. 'EN,DE,PL'; hkex: 'en,zh'; openalex: ISO 639-1 e.g. 'es,pt,id,ar'")
+    d.add_argument("--resource-types", default=None, dest="resource_types",
+                   help="eurlex: Cellar resource types, e.g. 'REG_IMPL,REG_DEL'")
+    d.add_argument("--directory-codes", default=None, dest="directory_codes",
+                   help="eurlex: directory-code prefixes, e.g. '02,0207,03' (customs/tariffs, statistics, agriculture)")
+    d.add_argument("--min-pages", type=int, default=None, dest="min_pages", help="eurlex: drop editions shorter than N pages")
+    d.add_argument("--keep-daily-templates", action="store_true", dest="keep_daily_templates",
+                   help="eurlex: keep the daily template acts (representative prices etc.)")
+    d.add_argument("--keep-cancelled", action="store_true", dest="keep_cancelled",
+                   help="hkex: keep filings whose headline was cancelled and replaced")
+    d.add_argument("--topics", default=None, help="openalex: comma-separated field aliases or 'all'")
+    d.add_argument("--commercial-only", action="store_true", dest="commercial_only",
+                   help="openalex: cc-by/cc-by-sa/cc0/public-domain only")
+    d.add_argument("--max-per-source", type=int, default=None, dest="max_per_source",
+                   help="openalex: refs per journal per run (default 5)")
     f = sub.add_parser("fetch", help="move bytes for pending rows into the store")
     f.add_argument("--source", default=None)
     f.add_argument("--batch", type=int, default=100)
@@ -478,6 +628,20 @@ def build_parser() -> argparse.ArgumentParser:
                    help="print what --run would discover, without fetching")
     c.add_argument("--workers", type=int, default=6)
     c.set_defaults(handler=cmd_campaign)
+
+    w = sub.add_parser("viewer", help="browse pages and hand-pick the SFT mixture")
+    w.add_argument("--out", default=str(SELECTION_ROOT),
+                   help="folder that receives one PDF per selected page")
+    w.add_argument("--thumbs", default=str(VIEWER_ROOT),
+                   help="thumbnail and page-count cache (derived, safe to delete)")
+    w.add_argument("--host", default="127.0.0.1")
+    w.add_argument("--port", type=int, default=8765)
+    w.add_argument("--no-open", action="store_true", dest="no_open",
+                   help="do not open a browser tab")
+    w.add_argument("--rebuild", action="store_true",
+                   help="re-extract missing page PDFs and backfill metadata.jsonl from "
+                        "selection.json, then exit")
+    w.set_defaults(handler=cmd_viewer)
 
     s = sub.add_parser("status", help="counts by source and store size")
     s.set_defaults(handler=cmd_status)

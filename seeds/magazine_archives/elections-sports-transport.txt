@@ -1,0 +1,119 @@
+# magazine_archives seeds — group "elections-sports-transport" (validated 2026-09-10)
+#
+# Format: <index-page-url> | <licence> | <label> | follow=<regex>
+# The line is split on "|", so a follow regex can never contain alternation.
+# Every seed below was probed with the adapter's own HREF/looks_like_pdf_url/
+# RobotsCache path at 1 req/s: index fetched, PDF links counted, one PDF
+# fetched (HTTP 200, %PDF- magic) and checked with pymupdf for a text layer
+# (>= 30 words on page 1 or the first table page) and find_tables hits.
+# All samples were born-digital (no image-only pages seen).
+#
+# Run:  uv run python -m scriptocr discover magazine_archives --query seeds/magazine_archives/elections-sports-transport.txt
+#
+# Host notes:
+#   results.imsa.com 302s to imsa.results.alkamelcloud.com and the listing uses
+#     RELATIVE hrefs; the adapter joins against the seed URL (not the redirect
+#     target), so the seed MUST be the alkamelcloud host or every PDF URL is
+#     minted on the wrong host (results.imsa.com/Results/... then 302s to a
+#     malformed "https://imsa.results.alkamelcloud.comResults/..." URL).
+#   www.sos.ca.gov issue pages link PDFs on elections.cdn.sos.ca.gov (another
+#     host; fine — only follow links are host-restricted). Each issue page links
+#     both complete-sov.pdf (~13 MB) and the per-section PDFs it is made of, so
+#     the compiled volume duplicates its own sections (BIS qtrpdf-style hazard).
+#   www.trenitalia.com In_Treno_Orario_TuttItalia.pdf is 53 MB / 3,768 pages —
+#     under the 128 MB cap but slow; only 4 timetable PDFs on that page (kept
+#     commented out below as optional).
+#   Licence column is blank wherever the site states no reusable licence.
+#     bundeswahlleiterin.de impressum: reproduction permitted with attribution
+#     ("Quellenangabe ist jedoch erforderlich") — not asserted as open.
+#     mext.go.jp states its Government Standard Terms of Use are CC BY 4.0-
+#     compatible; soumu.go.jp's terms page could not be confirmed by grep, so
+#     soumu stays blank.
+
+# --- election results ------------------------------------------------------
+# FEC "Federal Elections" biennial results books + official presidential results.
+# 10 PDFs on the page; sample 2024presgeresults.pdf: 9 pp, p1 206 words, state x
+# candidate vote tables on every page.
+https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/ | public-domain | fec-federal-election-results
+
+# Bundeswahlleiterin Bundestagswahl 2025 publications (Hefte 1-5, Wahlbezirks-
+# tabellen). 14 PDFs; sample btw25_wbztabs_gesamt.pdf: 263 pp, 747-word pages,
+# turnout/results tables by Land and year (German).
+https://www.bundeswahlleiterin.de/bundestagswahlen/2025/publikationen.html | | bundeswahlleiterin-btw2025
+
+# MIC Japan (soumu) House of Representatives election statistics: the ichiran
+# page lists per-election indexes (shugiin47..51), each linking 4-5 PDFs of
+# results tables. Sample 000930924.pdf: 685 pp, 160-word CJK table pages.
+https://www.soumu.go.jp/senkyo/senkyo_s/data/shugiin/ichiran.html | | soumu-shugiin-election-results | follow=/data/shugiin\d+/index\.html
+
+# California Secretary of State Statement of Vote archive: index lists 44
+# statement-vote pages (1990-2026), each linking ~24 section PDFs on
+# elections.cdn.sos.ca.gov. Sample complete-sov.pdf (2026 primary): 121 pp,
+# 767-word pages, county x candidate tables (1,364 cells on p4).
+https://www.sos.ca.gov/elections/prior-elections/statewide-election-results | | ca-sos-statement-of-vote | follow=statewide-election-results/[^/]+/statement-vote$
+
+# --- sports results ----------------------------------------------------------
+# FIA F1 2025 season documents: classifications, championship points, timing
+# infringements. 56 PDFs; sample championship_points.pdf: 4 pp, 712-753 words,
+# driver x round points matrix (2,241 cells on p2). No event sub-pages exist;
+# the season page is the whole listing. (A season-2024 URL guess returned 0.)
+https://www.fia.com/documents/championships/fia-formula-one-world-championship-14/season/season-2025-2071 | | fia-f1-2025-documents
+
+# IMSA / Alkamel timing results directory (practice, qualifying, race results,
+# sector times, points). 63 PDFs on the landing listing; sample Championship
+# Points - Provisional.pdf: 3 pp, 307-352 words, standings tables.
+https://imsa.results.alkamelcloud.com/ | | imsa-alkamel-results
+
+# Omega Timing live-results hub: 34 meeting pages (Diamond League athletics,
+# World Aquatics, IBSF bob/skeleton, TYR Pro Swim...), each linking ~14 result
+# PDFs at /File/<hex>.pdf. Sample: IBSF World Cup start list, 375 words, 756-cell
+# table on a single page.
+https://www.omegatiming.com/sports-timing-live-results | | omega-timing-results | follow=/20\d\d/[^/]+-live-results$
+
+# --- transport timetables --------------------------------------------------
+# Ceske drahy line timetables (tratove jizdni rady) + substitute timetables.
+# 28 PDFs; sample k001-od-2026-08-01.pdf: 26 pp, 1,042 words and 1,914 table
+# cells on p1 (Czech). The /0 /1 /20 sub-pages carry no extra PDF links.
+https://www.cd.cz/jizdni-rad/tratove-jizdni-rady/ | | cd-cz-line-timetables
+
+# OeBB Fahrplanbilder (Austrian line timetables, numbered 100-9xx). 84 PDFs;
+# sample 100.pdf: 21 pp, 1,321-2,070 words/page, ~3,600-cell timetable grids —
+# the densest table pages in this group (German).
+https://www.oebb.at/de/fahrplan/fahrplanbilder | | oebb-fahrplanbilder
+
+# juckins.net Amtrak timetable archive (third-party mirror of Amtrak's own PDF
+# timetables, national system + per-route, 1,728 PDFs in one listing). Sample
+# timetables_National_20180601.pdf: 139 pp, 1,375-word pages, timetable grids.
+# Older items may be scans; recent ones are born-digital.
+https://juckins.net/amtrak_timetables/archive/ | | juckins-amtrak-timetables
+
+# JR Shikoku station departure timetables (jikoku). 265 PDFs; sample
+# takamatsu.pdf: 3 pp, 305-414 words, 1,500-3,159-cell grids (Japanese).
+https://www.jr-shikoku.co.jp/01_trainbus/jikoku/ | | jr-shikoku-station-timetables
+
+# --- school / university: exam statistics and course catalogs ------------------
+# AQA results statistics (GCSE/A-level grade distributions by subject).
+# 12 PDFs; sample: 6 pp, 145-406 words, subject x grade tables.
+https://www.aqa.org.uk/exams-administration/results-days/results-statistics | | aqa-results-statistics
+
+# HKEAA HKDSE examination statistics (bilingual EN/ZH). 8 PDFs; sample
+# dseexamstat25_1.pdf: 5 pp, 170-304 words, ruled tables on every page.
+https://www.hkeaa.edu.hk/en/hkdse/assessment/exam_reports/exam_stat/ | | hkeaa-hkdse-exam-statistics
+
+# KMK Abiturnoten (Abitur grade statistics by Land, 2021-2025). 6 PDFs;
+# sample Schnellmeldung_Abiturnoten_2025.pdf: 5 pp, 765-word table pages (German).
+https://www.kmk.org/dokumentation-statistik/statistik/schulstatistik/abiturnoten.html | | kmk-abiturnoten
+
+# UT Austin catalog archive: 5 current catalogs as PDFs (general information,
+# undergraduate, graduate, law, medical; ~700 pp each). Sample
+# 2026-27-generalinformation.pdf: 714 pp, 432-792 words/page, course/fee tables.
+# The older-year archive lives on registrar.utexas.edu (other host, no follow).
+https://catalog.utexas.edu/archive/ | | ut-austin-catalogs
+
+# --- validated but optional (low volume or oversized) -------------------------
+# soumu House of Councillors twin: 6 per-election pages, ~2 PDFs each.
+# https://www.soumu.go.jp/senkyo/senkyo_s/data/sangiin/ichiran.html | | soumu-sangiin-election-results | follow=/data/sangiin\d+/index\.html
+# MEXT school basic survey: 8 year pages, 1 summary PDF each (dense CJK tables).
+# https://www.mext.go.jp/b_menu/toukei/chousa01/kihon/kekka/1268046.htm | CC-BY-4.0-compatible (JP Government Standard Terms of Use) | mext-school-basic-survey | follow=/kihon/kekka/k_detail/
+# Trenitalia national timetables: 4 timetable PDFs, one is 53 MB / 3,768 pages.
+# https://www.trenitalia.com/it/informazioni/orario-ferroviario.html | | trenitalia-orario-ferroviario

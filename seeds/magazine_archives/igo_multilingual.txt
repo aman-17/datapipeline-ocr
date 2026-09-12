@@ -1,0 +1,89 @@
+# magazine_archives seeds — group "igo-multilingual" (validated 2026-09-10)
+#
+# Intergovernmental-organisation publication archives whose raw HTML carries
+# .pdf hrefs (or one hop of issue pages that do). Every line below was checked:
+# index fetched with curl/httpx under the pipeline User-Agent, robots.txt allows
+# the index, the hop pages and the PDF paths for our UA (scriptocr RobotsCache),
+# and one PDF per line was downloaded, %PDF- checked and inspected with pymupdf
+# (text layer >= 30 words, tables found with find_tables(strategy="text")).
+#
+# Format: <index-page-url> | <licence> | <label> | follow=<regex>
+# The adapter splits a line on "|" BEFORE it reads follow=, so a follow regex
+# must not contain "|" (no alternation) — use character classes, optional
+# groups, or one line per alternative instead.
+# Licence is only asserted where the publisher states it on the site or on the
+# copyright page of the sampled PDF; blank otherwise.
+#
+# Run:  uv run python -m scriptocr discover magazine_archives --query seeds/magazine_archives/igo_multilingual.txt
+#
+# Politeness notes for the operator: none of these hosts publishes a
+# Crawl-delay; www.imf.org /external/ answers plain requests while /en/ is
+# WAF-gated, so keep the IMF lines on the legacy /external/ paths only.
+
+# --- economics / finance ---------------------------------------------------
+# ECB Economic Bulletin, every issue 2015-01..2026-05 in up to 24 EU languages
+# (175 PDFs on the page: 99 en + de/es/fr/it/lt/lv/et/pt/... editions).
+# ECB copyright notice: free use with the ECB cited as source — not a named licence.
+https://www.ecb.europa.eu/press/economic-bulletin/html/all_releases.en.html | | ecb-economic-bulletin
+
+# AfDB African Economic Outlook family: 2026 Country Focus Reports in en/fr/pt
+# (country-focus-report-2026-*, rapport-pays-2026-*, relatorio-de-foco-do-pais-2026-*)
+# and the regional outlooks (*-economic-outlook-2026); one PDF per document
+# page. Paginated (?page=1..) — add a line per page if more depth is wanted.
+https://www.afdb.org/en/documents/publications/african-economic-outlook | | afdb-aeo-country-reports | follow=/documents/[a-z-]+-20\d\d(-[a-z-]+)?$
+
+# EIB publications (fr index): each publication page links the report and its
+# language editions — "EIB at a glance" alone is 43 PDFs in ~30 languages.
+https://www.eib.org/fr/publications/index | all rights reserved | eib-publications-fr | follow=/fr/publications/\d{8}-[^/?]+$
+
+# BCEAO (WAEMU central bank, French): the five "Rapport sur la politique
+# monétaire" PDFs linked directly from the publications index (dense
+# statistical tables). Low volume: the per-theme listings are filter views that
+# expose no further PDFs in raw HTML.
+https://www.bceao.int/fr/publications | | bceao-publications-fr
+
+# IMF Finance & Development magazine — legacy /external/ archives with direct
+# article/issue PDFs. French archive: 103 PDFs on the page. Chinese archive: 43
+# direct + one hop into per-issue index pages.
+https://www.imf.org/external/pubs/ft/fandd/fre/fda.htm | all rights reserved | imf-fandd-fr
+https://www.imf.org/external/chinese/pubs/ft/fandd/fda.htm | all rights reserved | imf-fandd-zh | follow=/chinese/pubs/ft/fandd/20\d\d/\d\d/index\.htm$
+
+# Eurasian Economic Commission statistics (Russian): info-blocks on the index
+# plus yearbook / pocketbook / express-information sub-pages (426-page
+# Statistical Yearbook 2025 is wall-to-wall tables). Anchored to the Russian
+# path so the /ky/ /hy/ /be/ mirrors of the same pages are not re-visited.
+https://eec.eaeunion.org/comission/department/dep_stat/union_stat/publications/ | | eaeu-statistics-ru | follow=^https://eec\.eaeunion\.org/comission/department/dep_stat/union_stat/publications/[a-z_]+/[A-Za-z0-9_-]+\.php$
+
+# --- labour / innovation / development ---------------------------------------
+# ILO flagship + major publications (/publications/flagship-reports/<slug> and
+# /publications/major-publications/<slug>): each page links the full report and
+# executive summaries in fr/es/pt/it/vi/ar. ILO publications are CC BY 4.0
+# (stated on the copyright page of the sampled full report).
+https://www.ilo.org/research-and-publications | cc-by-4.0 | ilo-flagship-major | follow=/publications/[a-z]+-[a-z]+/[a-z0-9-]+$
+
+# WIPO Global Innovation Index series: 24 detail pages, executive summaries in
+# en/fr/es/ar/zh/ru plus full reports; "© WIPO / CC BY 4.0" on the report.
+https://www.wipo.int/publications/en/series/index.jsp?id=129 | cc-by-4.0 | wipo-gii | follow=/publications/en/details\.jsp\?id=\d+
+
+# UNDP Human Development Reports: full reports plus overview/snapshot editions
+# in en/es/fr/zh/ru/ar (21 PDFs on the 2023/24 page). "Tous droits réservés".
+https://hdr.undp.org/reports-and-publications | all rights reserved | undp-hdr | follow=/content/[^/?]+$
+
+# UNFPA State of World Population 2025: full report in en/es/fr/ru(/ar) with
+# the statistical-indicator annex; older editions live at /swp2024, /swp2023.
+https://www.unfpa.org/swp2025 | | unfpa-swop-2025
+
+# --- health / gender / regional bodies -------------------------------------
+# WHO Regional Office for Africa, French listing: bulletins, RD reports,
+# guidance; WHO documents are CC BY-NC-SA 3.0 IGO (copyright page of the
+# sampled report). /publications (en) and /pt/publications are the siblings.
+https://www.afro.who.int/fr/publications | cc-by-nc-sa-3.0-igo | who-afro-fr | follow=/fr/publications/[^/?]+$
+
+# African Union documents: each document page links the EN and FR (often AR/PT)
+# editions from /sites/default/files/documents/.
+https://au.int/en/documents | | au-documents | follow=/documents/\d{8}/
+
+# UN Women digital library, Spanish listing: publication pages link en/es/fr/
+# ar/zh/ru editions (10 PDFs on the sampled page). Licence varies per document
+# (some CC IGO, some "all rights reserved"), so none is asserted here.
+https://www.unwomen.org/es/digiteca/publicaciones | | unwomen-es | follow=/es/digital-library/publications/\d{4}/\d{2}/

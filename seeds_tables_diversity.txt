@@ -1,0 +1,88 @@
+# 87 validated institutional PDF listings (2026-09-10): born-digital, tables seen; format: url | licence | label | follow=regex
+https://www.ecb.europa.eu/press/economic-bulletin/html/all_releases.en.html | non-commercial | ECB Economic Bulletin (all language editions) | max=150
+https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/ |  | Riksbank Penningpolitisk rapport (sv) | follow=/penningpolitisk-rapport/\d{4}/ | max=150
+https://www.banxico.org.mx/publicaciones-y-prensa/informes-trimestrales/informes-trimestrales-precios.html |  | Banxico Informe Trimestral (es) | max=150
+https://www.tcmb.gov.tr/wps/wcm/connect/TR/TCMB+TR/Main+Menu/Yayinlar/Raporlar/Enflasyon+Raporu/ |  | TCMB Enflasyon Raporu (tr) | follow=Enflasyon\+Raporu/\d{4}/ | max=150
+https://www.bundesbank.de/de/publikationen/berichte/finanzstabilitaetsberichte |  | Bundesbank Finanzstabilitaetsbericht (de) | follow=/finanzstabilitaetsberichte/finanzstabilitaetsbericht- | max=150
+https://www.bde.es/wbe/es/publicaciones/analisis-economico-investigacion/boletin-economico/ | non-commercial | Banco de Espana Boletin Economico (es) | max=150
+https://www.bde.es/wbe/es/publicaciones/estabilidad-financiera-politica-macroprudencial/informe-estabilidad-financiera/ | non-commercial | Banco de Espana Informe de Estabilidad Financiera (es) | max=150
+https://www.mnb.hu/kiadvanyok/jelentesek/inflacios-jelentes |  | MNB Inflacios jelentes (hu) | follow=/inflacios-jelentes/\d{4}-\d{2}-\d{2}- | max=150
+https://www.bi.go.id/id/publikasi/laporan/default.aspx?Kategori=kajian%20stabilitas%20keuangan&Periode= |  | Bank Indonesia Kajian Stabilitas Keuangan (id) | follow=/id/publikasi/laporan/Pages/ | max=150
+https://www.cbr.ru/about_br/publ/ddkp/ |  | Bank of Russia Doklad o denezhno-kreditnoy politike (ru) | max=150
+https://www.norges-bank.no/aktuelt/publikasjoner/?selectedFacets%5bType%5d=11404 |  | Norges Bank Pengepolitisk rapport (no) | follow=/publikasjoner/Pengepolitisk-rapport/\d{4}/ | max=150
+https://www.snb.ch/de/news-publications/economy/quarterly-bulletin/quarterly-bulletin |  | SNB Quartalsheft (de) | follow=/de/publications/quarterly-bulletin/\d{4}/ | max=150
+https://www.banqueducanada.ca/publications/rpm/ |  | Banque du Canada Rapport sur la politique monetaire (fr) | follow=/publication/rpm/rpm-\d{4}-\d{2} | max=150
+https://www.stat.go.jp/data/nihon/index2.html | cc-by-4.0 | stat.go.jp Nihon no Tokei (Statistics of Japan) annual, 2016-2026 editions | max=150
+https://www.stat.go.jp/data/sekai/index.html | cc-by-4.0 | stat.go.jp Sekai no Tokei (World Statistics) annual | max=150
+https://stat.gov.pl/obszary-tematyczne/roczniki-statystyczne/roczniki-statystyczne/ | attribution-required (stat.gov.pl/copyright) | GUS statistical yearbooks (Rocznik Statystyczny, Maly Rocznik, sectoral yearbooks) | follow=/roczniki-statystyczne/roczniki-statystyczne/[^/?]+,\d+,\d+\.html$ | max=150
+https://stat.gov.pl/obszary-tematyczne/inne-opracowania/informacje-o-sytuacji-spoleczno-gospodarczej/ | attribution-required (stat.gov.pl/copyright) | GUS Biuletyn Statystyczny monthly bulletin | follow=biuletyn-statystyczny[^/]*,\d+,\d+\.html$ | max=150
+https://ftp.ibge.gov.br/Precos_Indices_de_Precos_ao_Consumidor/IPCA/Fasciculo_Indicadores_IBGE/ | | IBGE Indicadores IBGE: IPCA/INPC monthly fascicles (current year at top level, older years in YYYY/ subdirs) | follow=/Fasciculo_Indicadores_IBGE/\d{4}/$ | max=150
+https://ftp.ibge.gov.br/Comercio_e_Servicos/Pesquisa_Mensal_de_Comercio/Fasciculo_Indicadores_IBGE/ | | IBGE Indicadores IBGE: Pesquisa Mensal de Comercio monthly fascicles | follow=/Fasciculo_Indicadores_IBGE/\d{4}/$ | max=150
+https://www.istat.it/tag/prezzi-al-consumo/ | cc-by-4.0 | ISTAT press releases: consumer prices (tag archive -> comunicato-stampa page -> PDF) | follow=/comunicato-stampa/[^/]+/$ | max=150
+https://www.istat.it/tag/occupati-e-disoccupati/ | cc-by-4.0 | ISTAT press releases: employment and unemployment | follow=/comunicato-stampa/[^/]+/$ | max=150
+https://www.ine.es/dyngs/Prensa/notasPrensa.htm | cc-by-4.0 | INE notas de prensa (223 release pages, each with its PDF) | follow=/dyngs/Prensa/[A-Za-z0-9_]+\.htm$ | max=150
+https://www.statistik.at/medien/pressemitteilungen | attribution-required (statistik.at impressum) | Statistik Austria Pressemitteilungen, 811 PDFs linked directly (2023-) | max=150
+https://www.bls.gov/bls/news-release/empsit.htm | public-domain | bls-employment-situation | max=150
+https://www.bls.gov/bls/news-release/cpi.htm | public-domain | bls-cpi | max=150
+https://www.cdc.gov/mmwr/index2025.html | public-domain | cdc-mmwr-2025 | max=150
+https://www.cdc.gov/mmwr/index2020.html | public-domain | cdc-mmwr-2020 | max=150
+https://esmis.nal.usda.gov/ | public-domain | usda-esmis-latest | follow=/publication/[a-z0-9-]+$ | max=150
+https://esmis.nal.usda.gov/publication/crop-production | public-domain | usda-nass-crop-production | max=150
+https://esmis.nal.usda.gov/publication/weekly-weather-and-crop-bulletin | public-domain | usda-noaa-weekly-weather-crop-bulletin | max=150
+https://www.federalreserve.gov/releases/z1/release-dates.htm | | fed-z1-financial-accounts | max=150
+https://fiscal.treasury.gov/accounting/treasury-bulletin/previous | public-domain | treasury-bulletin | max=150
+https://bjs.ojp.gov/library/publications/list | public-domain | bjs-publications | follow=/library/publications/[a-z0-9-]*\d[a-z0-9-]*$ | max=150
+https://bjs.ojp.gov/library/publications/list?page=1 | public-domain | bjs-publications-p1 | follow=/library/publications/[a-z0-9-]*\d[a-z0-9-]*$ | max=150
+https://www.usgs.gov/centers/national-minerals-information-center/minerals-yearbook-metals-and-minerals | public-domain | usgs-minerals-yearbook | follow=/centers/nmic/[a-z-]+-statistics-and-information$ | max=150
+https://www2.census.gov/library/publications/2024/ | public-domain | census-publications-2024 | follow=/library/publications/2024/[a-z0-9-]+/$ | max=150
+https://www2.census.gov/library/publications/2021/ | public-domain | census-publications-2021 | follow=/library/publications/2021/[a-z0-9-]+/$ | max=150
+https://www.irs.gov/statistics/soi-tax-stats-soi-bulletins | public-domain | irs-soi-bulletin | follow=/statistics/soi-tax-stats-[a-z-]*bulletin[a-z-]*-\d{4}$ | max=150
+https://www.cpc.ncep.noaa.gov/products/CDB/CDB_Archive_pdf/pdf_CDB_archive.shtml | public-domain | noaa-cpc-climate-diagnostics-bulletin | max=150
+https://www.eia.gov/totalenergy/data/monthly/ | public-domain | eia-monthly-energy-review | max=150
+https://nces.ed.gov/programs/coe/ | public-domain | nces-condition-of-education | follow=/programs/coe/indicator/[a-z]{3} | max=150
+https://www.ecb.europa.eu/press/economic-bulletin/html/all_releases.en.html | | ecb-economic-bulletin | max=150
+https://www.afdb.org/en/documents/publications/african-economic-outlook | | afdb-aeo-country-reports | follow=/documents/[a-z-]+-20\d\d(-[a-z-]+)?$ | max=150
+https://www.eib.org/fr/publications/index | all rights reserved | eib-publications-fr | follow=/fr/publications/\d{8}-[^/?]+$ | max=150
+https://www.bceao.int/fr/publications | | bceao-publications-fr | max=150
+https://www.imf.org/external/pubs/ft/fandd/fre/fda.htm | all rights reserved | imf-fandd-fr | max=150
+https://www.imf.org/external/chinese/pubs/ft/fandd/fda.htm | all rights reserved | imf-fandd-zh | follow=/chinese/pubs/ft/fandd/20\d\d/\d\d/index\.htm$ | max=150
+https://eec.eaeunion.org/comission/department/dep_stat/union_stat/publications/ | | eaeu-statistics-ru | follow=^https://eec\.eaeunion\.org/comission/department/dep_stat/union_stat/publications/[a-z_]+/[A-Za-z0-9_-]+\.php$ | max=150
+https://www.ilo.org/research-and-publications | cc-by-4.0 | ilo-flagship-major | follow=/publications/[a-z]+-[a-z]+/[a-z0-9-]+$ | max=150
+https://www.wipo.int/publications/en/series/index.jsp?id=129 | cc-by-4.0 | wipo-gii | follow=/publications/en/details\.jsp\?id=\d+ | max=150
+https://hdr.undp.org/reports-and-publications | all rights reserved | undp-hdr | follow=/content/[^/?]+$ | max=150
+https://www.unfpa.org/swp2025 | | unfpa-swop-2025 | max=150
+https://www.afro.who.int/fr/publications | cc-by-nc-sa-3.0-igo | who-afro-fr | follow=/fr/publications/[^/?]+$ | max=150
+https://au.int/en/documents | | au-documents | follow=/documents/\d{8}/ | max=150
+https://www.unwomen.org/es/digiteca/publicaciones | | unwomen-es | follow=/es/digital-library/publications/\d{4}/\d{2}/ | max=150
+https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/ | public-domain | fec-federal-election-results | max=150
+https://www.bundeswahlleiterin.de/bundestagswahlen/2025/publikationen.html | | bundeswahlleiterin-btw2025 | max=150
+https://www.soumu.go.jp/senkyo/senkyo_s/data/shugiin/ichiran.html | | soumu-shugiin-election-results | follow=/data/shugiin\d+/index\.html | max=150
+https://www.sos.ca.gov/elections/prior-elections/statewide-election-results | | ca-sos-statement-of-vote | follow=statewide-election-results/[^/]+/statement-vote$ | max=150
+https://www.fia.com/documents/championships/fia-formula-one-world-championship-14/season/season-2025-2071 | | fia-f1-2025-documents | max=150
+https://imsa.results.alkamelcloud.com/ | | imsa-alkamel-results | max=150
+https://www.omegatiming.com/sports-timing-live-results | | omega-timing-results | follow=/20\d\d/[^/]+-live-results$ | max=150
+https://www.cd.cz/jizdni-rad/tratove-jizdni-rady/ | | cd-cz-line-timetables | max=150
+https://www.oebb.at/de/fahrplan/fahrplanbilder | | oebb-fahrplanbilder | max=150
+https://juckins.net/amtrak_timetables/archive/ | | juckins-amtrak-timetables | max=150
+https://www.jr-shikoku.co.jp/01_trainbus/jikoku/ | | jr-shikoku-station-timetables | max=150
+https://www.aqa.org.uk/exams-administration/results-days/results-statistics | | aqa-results-statistics | max=150
+https://www.hkeaa.edu.hk/en/hkdse/assessment/exam_reports/exam_stat/ | | hkeaa-hkdse-exam-statistics | max=150
+https://www.kmk.org/dokumentation-statistik/statistik/schulstatistik/abiturnoten.html | | kmk-abiturnoten | max=150
+https://catalog.utexas.edu/archive/ | | ut-austin-catalogs | max=150
+https://www.toronto.ca/city-government/budget-finances/city-finance/annual-financial-report/ | | toronto-annual-financial-report | max=150
+https://www.budget.gov.hk/2026/eng/estimates.html | | hk-budget-2026-estimates-en | max=150
+https://www.budget.gov.hk/2026/chi/estimates.html | | hk-budget-2026-estimates-zh | max=150
+https://www.berlin.de/sen/finanzen/haushalt/downloads/haushaltsplan-2026-27/artikel.1644823.php | | berlin-haushaltsplan-2026-27 | max=150
+https://www.zaimu.metro.tokyo.lg.jp/zaisei/yosan/ | | tokyo-metro-budget-ja | follow=/zaisei/yosan/r\d+$ | max=150
+https://ajuntament.barcelona.cat/pressupostosifinances/ca/ | | barcelona-pressupost-ca | follow=/pressupostosifinances/ca/pressupost/[^/]+$ | max=150
+https://ajuntament.barcelona.cat/pressupostosifinances/es/ | | barcelona-presupuesto-es | follow=/pressupostosifinances/es/presupuesto/[^/]+$ | max=150
+https://prefeitura.sp.gov.br/web/fazenda/contaspublicas | | sao-paulo-contas-publicas-pt | follow=/w/contaspublicas/\d+$ | max=150
+https://www.nestle.com/investors/publications | | nestle-investor-publications | max=150
+https://www.roche.com/investors/reports | | roche-investor-reports | max=150
+https://www.pmda.go.jp/english/review-services/reviews/approved-information/drugs/0001.html | | pmda-review-reports | max=150
+https://www.ema.europa.eu/en/committees/committee-medicinal-products-human-use-chmp | | ema-chmp-agendas-minutes | max=150
+https://www.swissmedic.ch/swissmedic/en/home/about-us/publications/public-summary-swiss-par.html | | swissmedic-swisspar-summary-en | follow=/public-summary-swiss-par/[^/]+\.html$ | max=150
+https://www.swissmedic.ch/swissmedic/fr/home/ueber-uns/publikationen/public-summary-swiss-par.html | | swissmedic-swisspar-summary-fr | follow=/public-summary-swiss-par/[^/]+\.html$ | max=150
+https://kdigo.org/guidelines/ | | kdigo-guidelines | follow=kdigo\.org/guidelines/[^/]+/?$ | max=150
+https://www.sign.ac.uk/guidelines/ | | sign-guidelines | follow=sign\.ac\.uk/guidelines/[^/]+/$ | max=150
+https://www.cdc.gov/mmwr/index2026.html | public-domain | cdc-mmwr-2026-issues | max=150

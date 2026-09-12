@@ -186,6 +186,63 @@ whole render tree is derived and evictable.
 page and pdfium is what production OCR stacks use, while PyMuPDF is far richer
 for structural signals.
 
+## Stage 3 — pick the mixture by hand
+
+```bash
+uv run socr viewer                       # opens http://127.0.0.1:8765/
+uv run socr viewer --rebuild             # re-extract every page in selection.json
+```
+
+The viewer shows every stored document grouped by source and renders every
+page on demand. Click a page and it is copied — as a single-page PDF, content
+stream intact, not re-rendered — into `~/Desktop/scriptocr-selected/`:
+
+```
+selection.json                      source of truth, keyed by document sha
+metadata.jsonl                      one row per selected page, regenerated on every change
+pages/<source>/<sha>_p00007.pdf     the page itself
+```
+
+Deselecting removes the file. There is no export step, so the folder is never
+behind what the screen shows.
+
+Each `metadata.jsonl` row carries everything known about that page:
+
+| field | contents |
+|---|---|
+| `sha256`, `page_no`, `page_pdf`, `page_pdf_sha256`, `page_pdf_bytes`, `selected_at` | the page and its file |
+| `source`, `source_id`, `url`, `domain`, `license`, `title`, `stored_path` | provenance |
+| `catalogue` | the full `documents` row incl. source-specific `extra` (filer, form type, fiscal year, court…), `discovery_query`, `discovered_at`, `fetched_at`, `n_bytes`, fetch-attempt history |
+| `pdf` | `n_pages`, version, producer, creator, encryption, AcroForm, the PDF info dictionary |
+| `document_density` | the stage-2 document verdict (`dense_frac`, table/chart/opaque page counts) |
+| `page` | inspector signals **measured at selection time**: size, rotation, `text_chars`, `has_text_layer`, images, drawings, widgets, `text_angle`, `covered_by_one_image` |
+| `page_density` | density detectors on this page: table/chart flags plus every detected table (rows, cols, cells, numeric ratio, ruled/borderless/spanned/complex) and chart (kind, primitives, labels) |
+| `page_catalogue` | what stage 2 had recorded for the page, if anything — most pages were never density-sampled |
+| `text_layer` | the page's extracted text, when it has a text layer — a free weak label |
+
+Page signals are measured on the spot rather than only looked up because stage
+2 density-sampled eight pages a document and never inspected a third of the
+store; a lookup alone would leave most selected pages blank. `--rebuild`
+backfills metadata for pages selected before a field existed.
+
+Three things about it worth knowing:
+
+- **Nothing is pre-rendered.** The store is ~520k pages; at even thumbnail size
+  that is tens of gigabytes for pages nobody will look at. Thumbnails are
+  rasterised on first view (10–25 ms) and cached under
+  `SCRIPTOCR_DATA/viewer/`, which is derived and safe to delete.
+- **Stage-2 signals are the navigation.** The Pages tab filters the whole
+  corpus by *scanned* (no text layer), *form* (widgets), *rotated*, and the
+  sampled *table* / *borderless* / *chart* flags from `socr density`, so
+  "every scanned page in FRASER" is one click rather than a scroll through
+  22 documents. Table and chart flags exist only for the ~8 sampled pages per
+  document; text layer, widgets and rotation are known for every inspected page.
+- **Selection is a file, not a catalogue stage.** It is a human's working set
+  and has to survive a dropped database; the folder is self-describing and
+  every page in it traces back to source, URL and licence without Postgres.
+  The viewer itself falls back to walking the content store if Postgres is
+  down — it opens, but with no provenance and no filters.
+
 ## Design notes
 
 - **Postgres, not SQLite**: `claim_pending` uses `FOR UPDATE SKIP LOCKED`, so

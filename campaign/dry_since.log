@@ -1,0 +1,30 @@
+candidate table pages: 22745 from 5977 docs
+after excluding documents already in the SFT sets: 22745 pages, 5977 docs
+detecting language on 10245 pages
+  0/10245
+  500/10245
+  1000/10245
+  1500/10245
+  2000/10245
+  2500/10245
+  3000/10245
+  3500/10245
+  4000/10245
+  4500/10245
+  5000/10245
+  5500/10245
+  6000/10245
+  6500/10245
+  7000/10245
+  7500/10245
+  8000/10245
+  8500/10245
+  9000/10245
+  9500/10245
+  10000/10245
+
+picked 0 pages
+by source: {}
+by family (top 25): {}
+by language: {}
+complex/borderless/spanned/landscape pages: 0 0 0 0
