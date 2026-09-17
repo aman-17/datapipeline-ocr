@@ -40,6 +40,7 @@ from .adapters.safedocs import SafeDocs
 from .adapters.search import Exa, Firecrawl, SerpApi
 from .adapters.sec_edgar import SecEdgar
 from .adapters.source import SourceAdapter
+from .adapters.state_bills import StateBills
 from .adapters.worldbank import WorldBank
 from . import campaign
 from .catalog import DEFAULT_DSN, Catalog
@@ -87,6 +88,8 @@ def build_adapter(name: str) -> SourceAdapter:
             return SerpApi()
         case "bis":
             return BIS()
+        case "state_bills":
+            return StateBills()
         case "worldbank":
             return WorldBank()
         case "sec_edgar":
@@ -249,9 +252,18 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
                 kwargs["series"] = tuple(csv(args.series))
             if args.years:
                 kwargs["years"] = parse_range(args.years)
+        case "state_bills":
+            if getattr(args, "states", None):
+                kwargs["states"] = tuple(csv(args.states))
+            if getattr(args, "sessions", None):
+                kwargs["sessions"] = tuple(csv(args.sessions))
+            if getattr(args, "max_number", None):
+                kwargs["max_number"] = args.max_number
         case "worldbank":
             if args.docty:
                 kwargs["docty"] = args.docty
+            if getattr(args, "wb_lang", None):
+                kwargs["lang"] = args.wb_lang
             if args.start_date is not None:
                 kwargs["start_date"] = args.start_date
         case "sec_edgar":
@@ -515,6 +527,10 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("source")
     d.add_argument("--limit", type=int, default=None)
     d.add_argument("--query", default=None, help="internet_archive / arxiv query")
+    d.add_argument("--states", default=None, help="state_bills: comma list, e.g. tx,il")
+    d.add_argument("--sessions", default=None, help="state_bills: comma list, e.g. 88R,89R,103,104")
+    d.add_argument("--max-number", type=int, default=2500, help="state_bills: highest bill number to enumerate")
+    d.add_argument("--wb-lang", default=None, help="worldbank: document language, e.g. Chinese, Arabic, Korean, Japanese")
     d.add_argument("--zips", default="0", help="govdocs1 volumes, e.g. 0-4 or 0,3,7")
     d.add_argument("--max-per-item", type=int, default=1, dest="max_per_item")
     d.add_argument("--start-after", default=None, help="pmc_oa pagination anchor")

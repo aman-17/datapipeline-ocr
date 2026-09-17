@@ -29,9 +29,32 @@ from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 
+import tempfile
+from pathlib import Path
+
 import httpx
 
 from .adapters.source import PermanentFetchError, TransientFetchError
+
+# Some hosts (e.g. www.ilga.gov) serve an INCOMPLETE certificate chain: the leaf validates only if the
+# client already holds the intermediate. Browsers and curl repair this from the OS store or AIA fetching;
+# httpx/certifi does not, and every request fails with CERTIFICATE_VERIFY_FAILED. Any PEM dropped in
+# scriptocr/certs/ is appended to the certifi bundle so those hosts verify properly — never verify=False.
+EXTRA_CA_DIR = Path(__file__).with_name("certs")
+
+
+def _ca_bundle() -> str:
+    import certifi
+    pems = sorted(EXTRA_CA_DIR.glob("*.pem")) if EXTRA_CA_DIR.is_dir() else []
+    if not pems:
+        return certifi.where()
+    out = Path(tempfile.gettempdir()) / "scriptocr_ca_bundle.pem"
+    parts = [Path(certifi.where()).read_text()] + [p.read_text() for p in pems]
+    body = "\n".join(parts)
+    if not out.exists() or out.read_text() != body:
+        out.write_text(body)
+    return str(out)
+
 
 CONTACT = "amanrangapur@gmail.com"
 # The agent doing the collecting, named. The Internet Archive's own guidance is
@@ -62,6 +85,9 @@ _SHARED_LOCK = threading.Lock()
 
 
 @dataclass
+
+
+
 class RateLimiter:
     """Token-bucket-ish minimum interval between requests, per host."""
     default_rps: float = 2.0
@@ -113,7 +139,7 @@ class RobotsCache:
 
     def _load(self, host: str) -> RobotFileParser | None:
         try:
-            with httpx.Client(timeout=self.timeout, follow_redirects=True,
+            with httpx.Client(verify=_ca_bundle(), timeout=self.timeout, follow_redirects=True,
                               headers={"User-Agent": self.user_agent}) as client:
                 r = client.get(urljoin(host, "/robots.txt"))
             if r.status_code >= 400 or not r.text.strip():
@@ -138,8 +164,7 @@ class PoliteClient:
         self.max_retries = max_retries
         self.respect_robots = respect_robots
         self.robots = robots or (RobotsCache() if respect_robots else None)
-        self.client = httpx.Client(
-            timeout=timeout, follow_redirects=True,
+        self.client = httpx.Client(verify=_ca_bundle(), timeout=timeout, follow_redirects=True,
             headers={"User-Agent": USER_AGENT, "Accept": "*/*"},
         )
 
