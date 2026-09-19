@@ -159,6 +159,10 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
             kwargs["commercial_only"] = not args.include_noncommercial
             if args.start_after:
                 kwargs["start_after"] = args.start_after
+            if args.query:
+                kwargs["query"] = args.query          # ESearch, field-qualified: 'flowchart[Figure/Table Caption]'
+            if args.years:
+                kwargs["years"] = parse_range(args.years)
         case "govinfo":
             kwargs["collection"] = args.collection
             if args.start_date is not None:
@@ -237,6 +241,9 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
                 kwargs["commercial_only"] = True
             if args.max_per_source is not None:
                 kwargs["max_per_source"] = args.max_per_source
+            if args.search:
+                kwargs["search"] = args.search
+                kwargs["search_field"] = args.search_field
         case "exa" | "firecrawl" | "serpapi":
             if not args.query:
                 raise SystemExit(f"{args.source} needs --query")
@@ -526,7 +533,11 @@ def build_parser() -> argparse.ArgumentParser:
     d = sub.add_parser("discover", help="enumerate a source into the catalogue")
     d.add_argument("source")
     d.add_argument("--limit", type=int, default=None)
-    d.add_argument("--query", default=None, help="internet_archive / arxiv query")
+    d.add_argument("--query", default=None, help="internet_archive / arxiv / pmc_oa (ESearch) query")
+    d.add_argument("--search", default=None,
+                   help="openalex: term ANDed into every slice (fulltext.search by default)")
+    d.add_argument("--search-field", default="fulltext", dest="search_field",
+                   choices=["fulltext", "title_and_abstract", "title", "abstract", "default"])
     d.add_argument("--states", default=None, help="state_bills: comma list, e.g. tx,il")
     d.add_argument("--sessions", default=None, help="state_bills: comma list, e.g. 88R,89R,103,104")
     d.add_argument("--max-number", type=int, default=2500, help="state_bills: highest bill number to enumerate")

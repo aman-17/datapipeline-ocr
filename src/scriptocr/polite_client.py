@@ -66,7 +66,10 @@ CONTACT = "amanrangapur@gmail.com"
 AGENT = os.environ.get("SCRIPTOCR_AGENT", "Claude Code/1.0 (claude-opus-5)")
 USER_AGENT = (f"llamaindex-ocr-research/0.1 (document collection for OCR model "
               f"training; contact: {CONTACT}) {AGENT}")
-RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
+# 406 is in here because arXiv answers a burst with it rather than 429: the identical URL, with
+# the identical headers, returns 200 on the next try.  Treating it as permanent lost a whole
+# discovery query to one throttled request.
+RETRYABLE_STATUS = {406, 408, 425, 429, 500, 502, 503, 504}
 
 
 # The last-request clock is GLOBAL PER HOST, and that is the whole point.

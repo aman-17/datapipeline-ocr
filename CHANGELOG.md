@@ -105,6 +105,13 @@ unreachable `robots.txt` is treated as permissive, per convention.
 
 ### Fixed
 
+- `arxiv` — the Atom query goes through `urllib`, paced by the same rate
+  limiter. `export.arxiv.org` answers the adapter's httpx client with HTTP 406
+  after its first request of a process, whatever the headers (`Connection:
+  close` included), while `urllib` and `curl` get 200 on the same URLs at the
+  same pace — the TLS handshake is what differs, so the client was switched for
+  the API only. PDF fetches are unaffected. Measured 2026-09-18 after a whole
+  discovery run died to it.
 - `Catalog.attempt_count()` added. The fetch loop previously read a nonexistent
   `n_attempts` column off the row, so failures would have retried forever
   instead of parking as terminal after three attempts. Surfaced by extracting
@@ -115,6 +122,15 @@ unreachable `robots.txt` is treated as permissive, per convention.
 
 ### Changed
 
+- `pmc_oa --query` — discovery by content through E-utilities ESearch instead
+  of the id-ordered bucket scan, resolved against the same bucket for licence
+  and PDF (2026-09-18). Field-qualify the query: `flowchart[Figure/Table
+  Caption]` is 275k OA articles whose *figures* are flowcharts. Partitioned by
+  publication year and shuffled with a fixed seed. `--years` narrows the window.
+- `openalex --search` (`--search-field fulltext|title_and_abstract|title|
+  abstract|default`) ANDs a term into every language/field slice, for a slice
+  defined by content: `fulltext.search:flowchart` is 262k commercially licensed
+  English articles. Boolean OR and quoted phrases work; commas cannot appear.
 - Renamed for domain meaning: `http.py` → `polite_client.py`,
   `storage.py` → `content_store.py` (`LocalCAS` → `ContentStore`),
   `adapters/base.py` → `adapters/source.py`.
@@ -136,6 +152,25 @@ unreachable `robots.txt` is treated as permissive, per convention.
   `license_code` (filtered to commercial-safe by default) and
   `is_historical_ocr`, a free flag for scanned historical material. PubTabNet is
   derived from PMC, so treat them as one contamination unit.
+- **PubMed Central, ESearch** — figure captions are their own field.
+  `flowchart[Figure/Table Caption]` is 275k OA articles; the bare `flowchart`
+  is 2.5M because automatic term mapping expands it to "software design"[MeSH].
+  `retstart` above 9,998 is refused, so one query yields at most 9,999 ids;
+  partition by year with `mindate`/`maxdate`/`datetype=pdat` — a `2022[pdat]`
+  *term* is silently ignored and returns the unpartitioned count. The bucket is
+  not the whole OA subset (PMC8500000 has no prefix); `PMC{id}.1` is tried
+  directly and a listing is the fallback.
+- **arXiv** — HTTP 406 from `export.arxiv.org` is not "Not Acceptable" and not
+  a burst: it is the httpx TLS client being refused after its first request.
+  See Fixed.
+- **Internet Archive** — an *unfielded* word in `--query` is expanded server-side
+  to `text:`/`text__reviews:` and echoed that way, which trips the adapter's
+  echo check and aborts the run. Field every term (`subject:`, `title:`,
+  `description:`).
+- **NTRS** — `q` does not take OR: `flowchart OR "flow chart"` returns 0 hits
+  where each term alone returns dozens. One run per term. A 40-document run
+  over the default 1914–2027 windows is ~600 requests at 0.5 rps and prints
+  nothing while it walks them; pass `--years` and `--sti-types`.
 - **CourtListener** — `available_only=on` is essential: most RECAP hits describe
   PACER-gated documents with `is_available: false` and a null `filepath_local`,
   so without it the majority of discovered refs fail at fetch time.

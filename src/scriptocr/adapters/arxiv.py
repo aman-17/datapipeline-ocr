@@ -37,8 +37,8 @@ class ArXiv(SourceAdapter):
 
     def __init__(self, client: PoliteClient | None = None):
         self.http = client or PoliteClient(
-            rate=RateLimiter(default_rps=0.34, per_host_rps={
-                "export.arxiv.org": 0.34, "arxiv.org": 0.34}),
+            rate=RateLimiter(default_rps=0.15, per_host_rps={   # export.arxiv.org 429s above ~1 req / 5 s (retries included)
+                "export.arxiv.org": 0.15, "arxiv.org": 0.34}),
             timeout=180.0)
 
     def discover(self, *, query: str = "cat:cs.CL", limit: int | None = None,
@@ -49,7 +49,7 @@ class ArXiv(SourceAdapter):
             url = f"{API}?" + urlencode({
                 "search_query": query, "start": start, "max_results": PAGE,
                 "sortBy": "submittedDate", "sortOrder": "descending"})
-            root = ET.fromstring(self.http.get(url).text)
+            root = ET.fromstring(self._api_get(url))
             entries = root.findall(f"{ATOM}entry")
             if not entries:
                 return
@@ -82,6 +82,32 @@ class ArXiv(SourceAdapter):
                 if limit and n >= limit:
                     return
             start += PAGE
+
+    def _api_get(self, url: str) -> bytes:
+        """The Atom query through urllib, paced by PoliteClient's limiter.
+
+        export.arxiv.org answers httpx with HTTP 406 after the first request of a process
+        (measured 2026-09-18: first page 200, every later page 406 whatever the headers,
+        `Connection: close` included), while urllib and curl get 200 on the same URLs at the
+        same pace, five in a row. Nothing in the request differs that arXiv could read, so it
+        is the TLS client they are fingerprinting. urllib's handshake passes; use it for the
+        API only — PDF fetches through PoliteClient are unaffected.
+        """
+        import random
+        import time
+        import urllib.request
+        from ..polite_client import USER_AGENT
+        last: Exception | None = None
+        for attempt in range(4):
+            self.http.rate.wait("export.arxiv.org")
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+                with urllib.request.urlopen(req, timeout=180) as r:
+                    return r.read()
+            except Exception as e:  # noqa: BLE001 — 406/429/5xx/network alike: back off, retry
+                last = e
+                time.sleep(random.uniform(2.0, 6.0 * 2**attempt))
+        raise PermanentFetchError(f"arxiv api: exhausted retries for {url}: {last}")
 
     def fetch(self, ref_row: dict[str, Any]) -> bytes:
         url = ref_row.get("url")

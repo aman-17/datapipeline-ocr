@@ -20,3 +20,4 @@ cas/
 
 # Environment / credentials
 .env
+campaign/*

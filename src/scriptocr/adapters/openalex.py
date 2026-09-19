@@ -230,6 +230,7 @@ class OpenAlex(SourceAdapter):
                  licences: Sequence[str] | None = None,
                  max_per_source: int = 5, max_per_host: int = 50,
                  seed: int = DEFAULT_SEED, per_page: int = PAGE_MAX,
+                 search: str | None = None, search_field: str = "fulltext",
                  **_: Any) -> Iterator[DocumentRef]:
         """Yield refs for OA journal articles, one slice per (language, field).
 
@@ -251,6 +252,13 @@ class OpenAlex(SourceAdapter):
         max_per_source / max_per_host   Template-diversity caps, per journal
                       (OpenAlex source id) and per pdf_url host, both per call.
         seed          The `sample` seed; the same kwargs re-yield the same refs.
+        search        A term ANDed into every slice as `{search_field}.search:`,
+                      for a slice defined by content rather than by field —
+                      `fulltext.search:flowchart` is 262k commercially licensed
+                      English articles (measured), `title_and_abstract` 3.8k.
+                      Boolean OR and quoted phrases work; commas cannot appear
+                      (they delimit filters) and are replaced by spaces.
+        search_field  fulltext | title_and_abstract | title | abstract | default.
 
         With `limit`, each slice is sampled and the quota is spread evenly
         across slices first, then refilled from whichever slices have material
@@ -263,9 +271,13 @@ class OpenAlex(SourceAdapter):
         fields = _resolve_topics(topics or DEFAULT_TOPICS)
         accepted = _resolve_licences(licences, commercial_only)
         per_page = max(1, min(int(per_page), PAGE_MAX))
+        search_field = _validate_search_field(search_field)
+        search = search.replace(",", " ").strip() if search else None
         slices = [_Slice(lang, alias, field_id,
-                         _filter(lang, field_id, concepts, start_year, end_year, accepted),
-                         _query(lang, alias, concepts, start_year, end_year, seed))
+                         _filter(lang, field_id, concepts, start_year, end_year, accepted,
+                                 search, search_field),
+                         _query(lang, alias, concepts, start_year, end_year, seed,
+                                search, search_field))
                   for lang in langs for alias, field_id in fields]
 
         # All per-call, never per-adapter: the fetch pass builds one adapter per
@@ -490,8 +502,19 @@ def _years(start_year: int, end_year: int | None) -> str:
     return f"publication_year:{start}" if end == start else f"publication_year:{start}-{end}"
 
 
+SEARCH_FIELDS = ("fulltext", "title_and_abstract", "title", "abstract", "default")
+
+
+def _validate_search_field(field: str) -> str:
+    key = str(field or "fulltext").strip().lower()
+    if key not in SEARCH_FIELDS:
+        raise ValueError(f"unknown search_field {field!r}; known: {list(SEARCH_FIELDS)}")
+    return key
+
+
 def _filter(lang: str, field_id: int | None, concepts: Sequence[str] | None,
-            start_year: int, end_year: int | None, licences: Sequence[str]) -> str:
+            start_year: int, end_year: int | None, licences: Sequence[str],
+            search: str | None = None, search_field: str = "fulltext") -> str:
     parts = [
         "open_access.is_oa:true",
         "primary_location.source.type:journal",
@@ -508,15 +531,20 @@ def _filter(lang: str, field_id: int | None, concepts: Sequence[str] | None,
         ids = [str(c).strip().rsplit("/", 1)[-1].upper() for c in concepts if str(c).strip()]
         if ids:
             parts.append("concepts.id:" + "|".join(ids))
+    if search:
+        parts.append(f"{search_field}.search:{search}")
     return ",".join(parts)
 
 
 def _query(lang: str, alias: str, concepts: Sequence[str] | None,
-           start_year: int, end_year: int | None, seed: int) -> str:
+           start_year: int, end_year: int | None, seed: int,
+           search: str | None = None, search_field: str = "fulltext") -> str:
     window = f"{start_year}-{end_year or ''}"
     text = f"openalex:{lang}:{alias}:{window}:seed={seed}"
     if concepts:
         text += ":concepts=" + "|".join(str(c).strip().rsplit("/", 1)[-1] for c in concepts)
+    if search:
+        text += f":search={search_field}:{search}"
     return text
 
 
