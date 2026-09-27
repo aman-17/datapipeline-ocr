@@ -101,6 +101,17 @@ class ArXiv(SourceAdapter):
         for attempt in range(4):
             self.http.rate.wait("export.arxiv.org")
             try:
+                # 2026-09-23: export.arxiv.org started answering urllib with 406 as well, while curl on the same
+                # URL at the same pace gets 200 — same TLS fingerprinting, one client further down the list.
+                # curl's stack is the one that passes today; urllib stays as the fallback if curl is missing.
+                import shutil
+                import subprocess
+                if shutil.which("curl"):
+                    proc = subprocess.run(["curl", "-sS", "--fail", "-m", "180", "-A", USER_AGENT, url],
+                                          capture_output=True, timeout=200)
+                    if proc.returncode == 0 and proc.stdout.lstrip().startswith(b"<?xml"):
+                        return proc.stdout
+                    raise RuntimeError(f"curl rc={proc.returncode}: {proc.stderr[:120]!r}")
                 req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
                 with urllib.request.urlopen(req, timeout=180) as r:
                     return r.read()
