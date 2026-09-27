@@ -30,6 +30,7 @@ from .adapters.fraser import Fraser
 from .adapters.govdocs1 import GovDocs1
 from .adapters.govinfo import GovInfo
 from .adapters.hkex import HKEX
+from .adapters.idl import IDL
 from .adapters.internet_archive import InternetArchive
 from .adapters.search.magazine_archives import MagazineArchives
 from .adapters.municipal_acfr import MunicipalACFR
@@ -84,6 +85,8 @@ def build_adapter(name: str) -> SourceAdapter:
             return Firecrawl()
         case "magazine_archives":
             return MagazineArchives()
+        case "idl":
+            return IDL()
         case "serpapi":
             return SerpApi()
         case "bis":
@@ -145,6 +148,8 @@ def discover_kwargs(args: argparse.Namespace) -> dict:
             if not args.query:
                 raise SystemExit("magazine_archives needs --query <seeds file path>")
             kwargs["seeds_file"] = args.query
+        case "idl":
+            kwargs["query"] = args.query          # Solr query; default = public filled-in forms of 1-3 pages
         case "internet_archive":
             if not args.query:
                 raise SystemExit(
